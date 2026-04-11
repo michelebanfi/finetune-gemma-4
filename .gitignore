@@ -1,1 +1,15 @@
 .venv/
+
+# Model finetuning outputs
+gemma4-*-sci-lora/
+gemma4-*-sci-gguf/
+
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment
+.env

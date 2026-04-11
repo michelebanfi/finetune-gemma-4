@@ -30,42 +30,57 @@ install()
 
 # ==============================================================================
 # SECTION 2: CONFIGURATION
-# With 48+ GB VRAM, the full 31B model fits comfortably in 4-bit (~15.5GB).
+# Edit config.yaml to switch models or tune hyperparameters.
 # ==============================================================================
+import yaml
+
+with open("config.yaml") as _f:
+    _cfg = yaml.safe_load(_f)
+
+_preset = _cfg["presets"][_cfg["model_preset"]]
+_train  = _cfg["training"]
+_ds     = _cfg["dataset"]
+_export = _cfg["export"]
+_hub    = _cfg["hub"]
 
 # --- Model ---
-MODEL_NAME = "unsloth/gemma-4-31B-it"   # Downloaded from HuggingFace automatically
-MAX_SEQ_LENGTH = 4096                    # 48GB VRAM allows longer contexts
-# token = "YOUR_HF_TOKEN"               # Uncomment if model is gated
+MODEL_NAME            = _preset["model_name"]
+MAX_SEQ_LENGTH        = _preset["max_seq_length"]
 
 # --- LoRA ---
-LORA_R = 16          # 48GB VRAM allows higher rank for better quality
-LORA_ALPHA = 32      # 2x LORA_R is a common choice for higher ranks
-LORA_DROPOUT = 0
+LORA_R                = _preset["lora_r"]
+LORA_ALPHA            = _preset["lora_alpha"]
+LORA_DROPOUT          = _train["lora_dropout"]
 
 # --- Training ---
-PER_DEVICE_BATCH_SIZE = 2   # 48GB VRAM can handle batch=2 with 31B in 4-bit
-GRADIENT_ACCUMULATION = 4   # Effective batch size = 2 * 4 = 8
-LEARNING_RATE = 2e-4
-WARMUP_STEPS = 60
-LR_SCHEDULER = "cosine"
-NUM_TRAIN_EPOCHS = 1
-MAX_STEPS = 100             # Quick test. Set to -1 for a full epoch.
-WEIGHT_DECAY = 0.01
-SEED = 42
+PER_DEVICE_BATCH_SIZE = _preset["per_device_batch_size"]
+GRADIENT_ACCUMULATION = _preset["gradient_accumulation"]
+LEARNING_RATE         = _train["learning_rate"]
+WARMUP_STEPS          = _train["warmup_steps"]
+LR_SCHEDULER          = _train["lr_scheduler"]
+NUM_TRAIN_EPOCHS      = _train["num_train_epochs"]
+MAX_STEPS             = _train["max_steps"]
+WEIGHT_DECAY          = _train["weight_decay"]
+SEED                  = _train["seed"]
 
 # --- Dataset ---
-OS_DATA_SUBSET = 15000      # Rows from OpenSciLM/OS_Train_Data (130K total)
-SCIRIFF_DATA_SUBSET = 15000 # Rows from allenai/SciRIFF-train-mix (70K total)
+OS_DATA_SUBSET        = _ds["os_data_subset"]
+SCIRIFF_DATA_SUBSET   = _ds["sciriff_data_subset"]
 
 # --- Output ---
-OUTPUT_DIR = "./gemma4-31b-sci-lora"
-GGUF_DIR   = "./gemma4-31b-sci-gguf"
+OUTPUT_DIR            = _preset["output_dir"]
+GGUF_DIR              = _preset["gguf_dir"]
+
+# --- Export ---
+EXPORT_GGUF           = _export["gguf"]
+GGUF_QUANTIZATION     = _export["gguf_quantization"]
 
 # --- Optional: Push to Hugging Face Hub ---
-HF_TOKEN = None       # e.g. "hf_xxxx"
-HF_REPO  = None       # e.g. "your-username/gemma4-31b-sci-lora"
-HF_REPO_GGUF = None   # e.g. "your-username/gemma4-31b-sci" (for Ollama)
+HF_TOKEN              = _hub["hf_token"]
+HF_REPO               = _hub["hf_repo"]
+HF_REPO_GGUF          = _hub["hf_repo_gguf"]
+
+print(f"Active preset: {_cfg['model_preset']} ({MODEL_NAME})")
 
 # ==============================================================================
 # SECTION 3: MODEL LOADING (4-bit QLoRA via Unsloth)
@@ -288,15 +303,12 @@ if HF_TOKEN and HF_REPO:
 # Merges LoRA into base weights and converts to GGUF format.
 # Requires ~30GB+ disk space for the merged fp16 model + GGUF output.
 # ==============================================================================
-EXPORT_GGUF = True  # Set to False to skip GGUF export
-
 if EXPORT_GGUF:
-    print(f"\nExporting to GGUF at {GGUF_DIR}...")
-    # Q8_0: good quality for 31B. Use Q4_K_M for smaller file size.
+    print(f"\nExporting to GGUF at {GGUF_DIR} ({GGUF_QUANTIZATION})...")
     model.save_pretrained_gguf(
         GGUF_DIR,
         tokenizer,
-        quantization_method="Q8_0",
+        quantization_method=GGUF_QUANTIZATION,
     )
     print(f"GGUF saved to {GGUF_DIR}")
 
@@ -304,7 +316,7 @@ if EXPORT_GGUF:
         model.push_to_hub_gguf(
             HF_REPO_GGUF,
             tokenizer,
-            quantization_method="Q8_0",
+            quantization_method=GGUF_QUANTIZATION,
             token=HF_TOKEN,
         )
         print(f"Uploaded to https://huggingface.co/{HF_REPO_GGUF}")

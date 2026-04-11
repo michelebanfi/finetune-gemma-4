@@ -31,3 +31,4 @@ timm
 torchcodec
 numpy
 pillow
+pyyaml
