@@ -28,7 +28,7 @@ presets:
 
 # Shared training settings (apply to all presets)
 training:
-  learning_rate: 2e-4
+  learning_rate: 0.0002
   warmup_steps: 60
   lr_scheduler: "cosine"
   num_train_epochs: 1
