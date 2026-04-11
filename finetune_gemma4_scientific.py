@@ -329,11 +329,31 @@ if EXPORT_GGUF:
 # ==============================================================================
 # SECTION 9: TESTING — BASE vs FINE-TUNED COMPARISON
 # Toggles the LoRA adapter on/off on the same model to compare responses.
+# Results are printed to console and saved to a .txt file in OUTPUT_DIR.
 # ==============================================================================
+import sys
+from datetime import datetime
 from transformers import TextStreamer
 from unsloth.chat_templates import get_chat_template
 
 tokenizer = get_chat_template(tokenizer, chat_template="gemma-4")
+
+class _Tee:
+    """Duplicates stdout writes to a file."""
+    def __init__(self, file):
+        self._file = file
+        self._stdout = sys.stdout
+    def write(self, data):
+        self._stdout.write(data)
+        self._file.write(data)
+    def flush(self):
+        self._stdout.flush()
+        self._file.flush()
+
+_results_path = os.path.join(OUTPUT_DIR, f"test_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt")
+_results_file = open(_results_path, "w", encoding="utf-8")
+sys.stdout = _Tee(_results_file)
+print(f"Model: {MODEL_NAME}  |  Adapter: {OUTPUT_DIR}  |  Date: {datetime.now().isoformat()}")
 
 def _generate(question, max_new_tokens=512):
     messages = [{"role": "user", "content": [{"type": "text", "text": question}]}]
@@ -383,3 +403,7 @@ compare("Summarize the current understanding of dark matter candidates in partic
 
 compare("How do feedback loops in the climate system, such as ice-albedo feedback and water "
         "vapor feedback, amplify or dampen the effects of increased CO2 concentrations?")
+
+sys.stdout = sys.stdout._stdout
+_results_file.close()
+print(f"\nTest results saved to {_results_path}")
