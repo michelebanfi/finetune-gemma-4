@@ -1,0 +1,33 @@
+# Gemma-4 31B Scientific Fine-tuning — server requirements
+# Install with: pip install -r requirements.txt
+#
+# Prerequisites (not pip-installable):
+#   - Python 3.10+
+#   - CUDA 12.1+ with matching PyTorch build
+#   - 48+ GB VRAM GPU
+#   - 50+ GB free disk (model weights + GGUF export)
+
+# --- Core training stack ---
+torch>=2.8.0
+triton>=3.4.0
+torchvision
+bitsandbytes>=0.45.0
+
+# --- Unsloth (handles QLoRA, fast kernels, GGUF export) ---
+unsloth
+unsloth_zoo>=2026.4.6
+
+# --- HuggingFace ecosystem ---
+transformers==5.5.0
+datasets>=3.0.0
+tokenizers>=0.21.0
+accelerate>=1.0.0
+peft>=0.14.0
+trl>=0.16.0
+huggingface_hub>=0.27.0
+
+# --- Misc deps pulled by unsloth/transformers ---
+timm
+torchcodec
+numpy
+pillow
