@@ -7,7 +7,7 @@ model_preset: "4B"
 
 presets:
   4B:
-    model_name: "unsloth/gemma-4-4B-it"
+    model_name: "unsloth/gemma-4-E4B-it"
     max_seq_length: 4096
     lora_r: 16
     lora_alpha: 32
