@@ -42,7 +42,7 @@ dataset:
   sciriff_data_subset: 15000  # Rows from allenai/SciRIFF-train-mix (70K total)
 
 export:
-  gguf: true
+  gguf: false
   gguf_quantization: "Q8_0"  # Q4_K_M for smaller file size
 
 hub:
