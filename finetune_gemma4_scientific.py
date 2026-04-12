@@ -1,8 +1,9 @@
 # ==============================================================================
-# Gemma-4 31B Scientific Fine-tuning (Unsloth + QLoRA)
-# Replicates the OpenSciLM approach with Gemma-4 31B on a local GPU (48+ GB VRAM).
+# Gemma-4 Scientific Fine-tuning (Unsloth + QLoRA)
+# Full pipeline: train → merge → GGUF → push to HuggingFace → test
 #
-# Run with: python finetune_gemma4_scientific.py
+# Run with: python3 finetune_gemma4_scientific.py
+# Config:   config.yaml  |  Credentials: .env (HF_TOKEN)
 # ==============================================================================
 import os
 from dotenv import load_dotenv
@@ -298,59 +299,78 @@ print("Adapter saved.")
 
 # ==============================================================================
 # SECTION 8b: EXPORT FOR OLLAMA (GGUF)
-# Merges LoRA into base weights (safetensors), then converts to GGUF via
-# llama.cpp. Requires ~30GB+ disk space.
+# 1. Merges LoRA into base weights → fp16 safetensors
+# 2. Converts to GGUF via llama.cpp (requires transformers<=5.3.0)
+# 3. Uploads the .gguf file to HuggingFace
+# Requires ~30GB+ disk space for the merged fp16 model + GGUF output.
 # ==============================================================================
 if EXPORT_GGUF:
-    import subprocess
+    SCRIPT_DIR    = os.path.dirname(os.path.abspath(__file__))
+    LLAMA_CPP_DIR = os.path.join(SCRIPT_DIR, "llama.cpp")
+    CONVERTER     = os.path.join(LLAMA_CPP_DIR, "convert_hf_to_gguf.py")
+    GGUF_FILE     = os.path.join(SCRIPT_DIR, "model.gguf")
 
-    # Step 1: Merge LoRA into base weights → saves merged fp16 safetensors to GGUF_DIR
-    print(f"\nMerging LoRA into base weights at {GGUF_DIR} ...")
+    # Step 1: Merge LoRA into base weights → saves merged fp16 safetensors
+    print(f"\n[GGUF 1/3] Merging LoRA into base weights at {GGUF_DIR} ...")
     model.save_pretrained_merged(GGUF_DIR, tokenizer, save_method="merged_16bit")
-    print(f"Merged model saved to {GGUF_DIR}")
+    merged_size = sum(
+        os.path.getsize(os.path.join(GGUF_DIR, f))
+        for f in os.listdir(GGUF_DIR)
+    )
+    print(f"  Merged model saved ({round(merged_size / 1e9, 2)} GB)")
 
-    # Step 2: Convert merged safetensors → GGUF via llama.cpp
-    LLAMA_CPP_DIR = os.path.join(os.path.dirname(__file__), "llama.cpp")
-    CONVERTER = os.path.join(LLAMA_CPP_DIR, "convert_hf_to_gguf.py")
-    GGUF_FILE = os.path.join(os.path.dirname(GGUF_DIR), "model.gguf")
-
+    # Step 2: Ensure llama.cpp converter is available
     if not os.path.exists(CONVERTER):
-        print("llama.cpp not found — cloning ...")
+        print("\n[GGUF 2/3] Cloning llama.cpp ...")
         subprocess.run(
             ["git", "clone", "--depth=1", "https://github.com/ggerganov/llama.cpp.git", LLAMA_CPP_DIR],
             check=True,
         )
-        subprocess.run(
-            ["pip", "install", "-r", os.path.join(LLAMA_CPP_DIR, "requirements", "requirements-convert_hf_to_gguf.txt")],
-            check=True,
-        )
+        req_file = os.path.join(LLAMA_CPP_DIR, "requirements", "requirements-convert_hf_to_gguf.txt")
+        subprocess.run([sys.executable, "-m", "pip", "install", "-r", req_file], check=True)
 
-    print(f"Converting to GGUF ({GGUF_QUANTIZATION}) → {GGUF_FILE} ...")
+    # Temporarily downgrade transformers for llama.cpp Gemma-4 compatibility
+    # (only affects the converter subprocess; current process keeps 5.5.0 loaded)
+    print("\n[GGUF 2/3] Preparing converter (transformers<=5.3.0 for Gemma-4 compat) ...")
     subprocess.run(
-        ["python3", CONVERTER, GGUF_DIR, "--outfile", GGUF_FILE, "--outtype", GGUF_QUANTIZATION.lower()],
+        [sys.executable, "-m", "pip", "install", "-q", "transformers==5.3.0"],
+        check=True,
+    )
+
+    # Convert merged safetensors → GGUF
+    print(f"[GGUF 2/3] Converting to GGUF ({GGUF_QUANTIZATION}) → {GGUF_FILE} ...")
+    subprocess.run(
+        [sys.executable, CONVERTER, GGUF_DIR, "--outfile", GGUF_FILE, "--outtype", GGUF_QUANTIZATION.lower()],
         check=True,
     )
     size_gb = round(os.path.getsize(GGUF_FILE) / 1e9, 2)
-    print(f"GGUF saved: {GGUF_FILE} ({size_gb} GB)")
+    print(f"  GGUF saved: {GGUF_FILE} ({size_gb} GB)")
+
+    # Restore transformers version
+    subprocess.run(
+        [sys.executable, "-m", "pip", "install", "-q", "transformers==5.5.0"],
+        check=True,
+    )
 
     # Step 3: Upload the .gguf file to HuggingFace
     if HF_TOKEN and HF_REPO_GGUF:
         from huggingface_hub import HfApi
         api = HfApi(token=HF_TOKEN)
         api.create_repo(HF_REPO_GGUF, repo_type="model", exist_ok=True)
-        print(f"Uploading {GGUF_FILE} ({size_gb} GB) to https://huggingface.co/{HF_REPO_GGUF} ...")
+        print(f"\n[GGUF 3/3] Uploading model.gguf ({size_gb} GB) to https://huggingface.co/{HF_REPO_GGUF} ...")
         api.upload_file(
             path_or_fileobj=GGUF_FILE,
             path_in_repo="model.gguf",
             repo_id=HF_REPO_GGUF,
             repo_type="model",
         )
-        print(f"Upload complete: https://huggingface.co/{HF_REPO_GGUF}")
-        print(f"Run with Ollama: ollama run hf.co/{HF_REPO_GGUF}")
+        print(f"  Upload complete: https://huggingface.co/{HF_REPO_GGUF}")
+        print(f"  Run with Ollama: ollama run hf.co/{HF_REPO_GGUF}")
     else:
-        print(f"To run with Ollama locally:")
-        print(f"  ollama create gemma4-sci --file {GGUF_FILE}")
-        print(f"  ollama run gemma4-sci")
+        print(f"\n[GGUF 3/3] Skipping upload (HF_TOKEN or hf_repo_gguf not set).")
+        print(f"  To run with Ollama locally:")
+        print(f"    ollama create gemma4-sci --file {GGUF_FILE}")
+        print(f"    ollama run gemma4-sci")
 
 # ==============================================================================
 # SECTION 9: TESTING — BASE vs FINE-TUNED COMPARISON
