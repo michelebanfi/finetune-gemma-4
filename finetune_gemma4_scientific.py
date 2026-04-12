@@ -311,13 +311,20 @@ if EXPORT_GGUF:
     print(f"GGUF saved to {GGUF_DIR}")
 
     if HF_TOKEN and HF_REPO_GGUF:
-        model.push_to_hub_gguf(
-            HF_REPO_GGUF,
-            tokenizer,
-            quantization_method=GGUF_QUANTIZATION,
-            token=HF_TOKEN,
+        from huggingface_hub import HfApi
+        api = HfApi(token=HF_TOKEN)
+        api.create_repo(HF_REPO_GGUF, repo_type="model", exist_ok=True)
+        gguf_files = list(os.scandir(GGUF_DIR))
+        print(f"Files to upload from {GGUF_DIR}:")
+        for f in gguf_files:
+            print(f"  {f.name}  ({round(f.stat().st_size / 1e9, 2)} GB)")
+        print(f"Uploading to https://huggingface.co/{HF_REPO_GGUF} ...")
+        api.upload_folder(
+            folder_path=GGUF_DIR,
+            repo_id=HF_REPO_GGUF,
+            repo_type="model",
         )
-        print(f"Uploaded to https://huggingface.co/{HF_REPO_GGUF}")
+        print(f"Upload complete: https://huggingface.co/{HF_REPO_GGUF}")
         print(f"Run with Ollama: ollama run hf.co/{HF_REPO_GGUF}")
     else:
         print("To run with Ollama locally:")
