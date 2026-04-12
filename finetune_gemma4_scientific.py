@@ -5,6 +5,8 @@
 # Run with: python finetune_gemma4_scientific.py
 # ==============================================================================
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # Force console-friendly tqdm (avoids invisible HTML progress bars in some envs)
 os.environ["TQDM_DISABLE"] = "0"
@@ -76,7 +78,7 @@ EXPORT_GGUF           = _export["gguf"]
 GGUF_QUANTIZATION     = _export["gguf_quantization"]
 
 # --- Optional: Push to Hugging Face Hub ---
-HF_TOKEN              = _hub["hf_token"]
+HF_TOKEN              = _hub["hf_token"] or os.environ.get("HF_TOKEN")
 HF_REPO               = _hub["hf_repo"]
 HF_REPO_GGUF          = _hub["hf_repo_gguf"]
 
@@ -292,11 +294,6 @@ model.save_pretrained(OUTPUT_DIR)
 tokenizer.save_pretrained(OUTPUT_DIR)
 print("Adapter saved.")
 
-if HF_TOKEN and HF_REPO:
-    print(f"Pushing adapter to https://huggingface.co/{HF_REPO} ...")
-    model.push_to_hub(HF_REPO, token=HF_TOKEN)
-    tokenizer.push_to_hub(HF_REPO, token=HF_TOKEN)
-    print("Push complete.")
 
 # ==============================================================================
 # SECTION 8b: EXPORT FOR OLLAMA (GGUF)

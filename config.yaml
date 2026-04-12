@@ -11,8 +11,8 @@ presets:
     max_seq_length: 4096
     lora_r: 16
     lora_alpha: 32
-    per_device_batch_size: 4      # smaller model allows larger batch
-    gradient_accumulation: 4      # effective batch size = 4 * 4 = 16
+    per_device_batch_size: 4 # smaller model allows larger batch
+    gradient_accumulation: 4 # effective batch size = 4 * 4 = 16
     output_dir: "./gemma4-4b-sci-lora"
     gguf_dir: "./gemma4-4b-sci-gguf"
 
@@ -22,7 +22,7 @@ presets:
     lora_r: 16
     lora_alpha: 32
     per_device_batch_size: 2
-    gradient_accumulation: 4      # effective batch size = 2 * 4 = 8
+    gradient_accumulation: 4 # effective batch size = 2 * 4 = 8
     output_dir: "./gemma4-31b-sci-lora"
     gguf_dir: "./gemma4-31b-sci-gguf"
 
@@ -32,20 +32,20 @@ training:
   warmup_steps: 60
   lr_scheduler: "cosine"
   num_train_epochs: 1
-  max_steps: 100        # Set to -1 for a full epoch
+  max_steps: 100 # Set to -1 for a full epoch
   weight_decay: 0.01
   seed: 42
   lora_dropout: 0
 
 dataset:
-  os_data_subset: 15000       # Rows from OpenSciLM/OS_Train_Data (130K total)
-  sciriff_data_subset: 15000  # Rows from allenai/SciRIFF-train-mix (70K total)
+  os_data_subset: 15000 # Rows from OpenSciLM/OS_Train_Data (130K total)
+  sciriff_data_subset: 15000 # Rows from allenai/SciRIFF-train-mix (70K total)
 
 export:
-  gguf: false
-  gguf_quantization: "Q8_0"  # Q4_K_M for smaller file size
+  gguf: true
+  gguf_quantization: "Q8_0" # Only Q8_0, BF16, F16 supported for Gemma-4
 
 hub:
-  hf_token: null    # e.g. "hf_xxxx"
-  hf_repo: null     # e.g. "your-username/gemma4-4b-sci-lora"
-  hf_repo_gguf: null  # e.g. "your-username/gemma4-4b-sci"
+  hf_token: null # Leave null — token is read from HF_TOKEN in .env
+  hf_repo: null # Unused (LoRA push disabled)
+  hf_repo_gguf: linosium/gemma4-4b-sci # e.g. "your-username/gemma4-4b-sci"

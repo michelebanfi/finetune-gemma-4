@@ -32,3 +32,4 @@ torchcodec
 numpy
 pillow
 pyyaml
+python-dotenv
