@@ -4,6 +4,8 @@
 gemma4-*-sci-lora/
 gemma4-*-sci-gguf/
 
+unsloth_compiled_cache/
+
 # Python
 __pycache__/
 *.pyc
