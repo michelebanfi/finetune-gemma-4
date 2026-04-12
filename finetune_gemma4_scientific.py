@@ -298,37 +298,58 @@ print("Adapter saved.")
 
 # ==============================================================================
 # SECTION 8b: EXPORT FOR OLLAMA (GGUF)
-# Merges LoRA into base weights and converts to GGUF format.
-# Requires ~30GB+ disk space for the merged fp16 model + GGUF output.
+# Merges LoRA into base weights (safetensors), then converts to GGUF via
+# llama.cpp. Requires ~30GB+ disk space.
 # ==============================================================================
 if EXPORT_GGUF:
-    print(f"\nExporting to GGUF at {GGUF_DIR} ({GGUF_QUANTIZATION})...")
-    model.save_pretrained_gguf(
-        GGUF_DIR,
-        tokenizer,
-        quantization_method=GGUF_QUANTIZATION,
-    )
-    print(f"GGUF saved to {GGUF_DIR}")
+    import subprocess
 
+    # Step 1: Merge LoRA into base weights → saves merged fp16 safetensors to GGUF_DIR
+    print(f"\nMerging LoRA into base weights at {GGUF_DIR} ...")
+    model.save_pretrained_merged(GGUF_DIR, tokenizer, save_method="merged_16bit")
+    print(f"Merged model saved to {GGUF_DIR}")
+
+    # Step 2: Convert merged safetensors → GGUF via llama.cpp
+    LLAMA_CPP_DIR = os.path.join(os.path.dirname(__file__), "llama.cpp")
+    CONVERTER = os.path.join(LLAMA_CPP_DIR, "convert_hf_to_gguf.py")
+    GGUF_FILE = os.path.join(os.path.dirname(GGUF_DIR), "model.gguf")
+
+    if not os.path.exists(CONVERTER):
+        print("llama.cpp not found — cloning ...")
+        subprocess.run(
+            ["git", "clone", "--depth=1", "https://github.com/ggerganov/llama.cpp.git", LLAMA_CPP_DIR],
+            check=True,
+        )
+        subprocess.run(
+            ["pip", "install", "-r", os.path.join(LLAMA_CPP_DIR, "requirements", "requirements-convert_hf_to_gguf.txt")],
+            check=True,
+        )
+
+    print(f"Converting to GGUF ({GGUF_QUANTIZATION}) → {GGUF_FILE} ...")
+    subprocess.run(
+        ["python3", CONVERTER, GGUF_DIR, "--outfile", GGUF_FILE, "--outtype", GGUF_QUANTIZATION.lower()],
+        check=True,
+    )
+    size_gb = round(os.path.getsize(GGUF_FILE) / 1e9, 2)
+    print(f"GGUF saved: {GGUF_FILE} ({size_gb} GB)")
+
+    # Step 3: Upload the .gguf file to HuggingFace
     if HF_TOKEN and HF_REPO_GGUF:
         from huggingface_hub import HfApi
         api = HfApi(token=HF_TOKEN)
         api.create_repo(HF_REPO_GGUF, repo_type="model", exist_ok=True)
-        gguf_files = list(os.scandir(GGUF_DIR))
-        print(f"Files to upload from {GGUF_DIR}:")
-        for f in gguf_files:
-            print(f"  {f.name}  ({round(f.stat().st_size / 1e9, 2)} GB)")
-        print(f"Uploading to https://huggingface.co/{HF_REPO_GGUF} ...")
-        api.upload_folder(
-            folder_path=GGUF_DIR,
+        print(f"Uploading {GGUF_FILE} ({size_gb} GB) to https://huggingface.co/{HF_REPO_GGUF} ...")
+        api.upload_file(
+            path_or_fileobj=GGUF_FILE,
+            path_in_repo="model.gguf",
             repo_id=HF_REPO_GGUF,
             repo_type="model",
         )
         print(f"Upload complete: https://huggingface.co/{HF_REPO_GGUF}")
         print(f"Run with Ollama: ollama run hf.co/{HF_REPO_GGUF}")
     else:
-        print("To run with Ollama locally:")
-        print(f"  ollama create gemma4-sci -f {GGUF_DIR}/Modelfile")
+        print(f"To run with Ollama locally:")
+        print(f"  ollama create gemma4-sci --file {GGUF_FILE}")
         print(f"  ollama run gemma4-sci")
 
 # ==============================================================================

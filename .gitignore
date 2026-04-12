@@ -4,6 +4,8 @@
 gemma4-*-sci-lora/
 gemma4-*-sci-gguf/
 
+llama.cpp/
+
 unsloth_compiled_cache/
 gemma4-4b-sci-gguf_gguf/
 
