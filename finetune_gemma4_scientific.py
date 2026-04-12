@@ -101,7 +101,7 @@ model, tokenizer = FastModel.from_pretrained(
     model_name=MODEL_NAME,
     max_seq_length=MAX_SEQ_LENGTH,
     load_in_4bit=True,
-    device_map="auto",   # Single GPU: puts everything on cuda:0
+    device_map={"": 0},  # Explicitly pin to GPU 0; prevents Trainer from re-moving model
 )
 
 # ==============================================================================
@@ -239,6 +239,7 @@ trainer = SFTTrainer(
         max_seq_length=MAX_SEQ_LENGTH,
         per_device_train_batch_size=PER_DEVICE_BATCH_SIZE,
         gradient_accumulation_steps=GRADIENT_ACCUMULATION,
+        gradient_checkpointing=True,
         warmup_steps=WARMUP_STEPS,
         num_train_epochs=NUM_TRAIN_EPOCHS,
         max_steps=MAX_STEPS,

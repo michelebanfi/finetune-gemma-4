@@ -11,8 +11,8 @@ presets:
     max_seq_length: 4096
     lora_r: 16
     lora_alpha: 32
-    per_device_batch_size: 4 # smaller model allows larger batch
-    gradient_accumulation: 4 # effective batch size = 4 * 4 = 16
+    per_device_batch_size: 1 # conservative for 32GB VRAM with Gemma-4 vision encoder
+    gradient_accumulation: 16 # effective batch size = 1 * 16 = 16
     output_dir: "./gemma4-4b-sci-lora"
     gguf_dir: "./gemma4-4b-sci-gguf"
 
