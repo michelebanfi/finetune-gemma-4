@@ -32,7 +32,7 @@ training:
   warmup_steps: 60
   lr_scheduler: "cosine"
   num_train_epochs: 1
-  max_steps: 600 # Set to -1 for a full epoch
+  max_steps: 50 # Set to -1 for a full epoch
   weight_decay: 0.01
   seed: 42
   lora_dropout: 0

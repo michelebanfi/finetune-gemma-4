@@ -5,21 +5,25 @@ Use this script when you already have the merged fp16 model in GGUF_DIR
 (produced by the training script) but need to re-run conversion or upload.
 
 Usage:
-    python3 convert_and_upload_gguf.py
+    python3 convert_and_upload_gguf.py              # skip upload if model.gguf already on HF
+    python3 convert_and_upload_gguf.py --force-upload  # overwrite existing HF file
 
 Reads config from config.yaml and HF_TOKEN from .env or environment.
 
 NOTE: llama.cpp's converter requires transformers<=5.3.0 for Gemma-4.
-      If you see a Gemma4Config import error, run:
-          pip install transformers==5.3.0
-      then re-run this script. Restore afterwards with:
-          pip install transformers==5.5.0
+      This script handles the version pin automatically.
 """
+import argparse
 import os
 import sys
 import subprocess
 import yaml
 from dotenv import load_dotenv
+
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--force-upload", action="store_true",
+                     help="Upload even if model.gguf already exists in the HF repo")
+_args = _parser.parse_args()
 
 load_dotenv()
 
@@ -121,6 +125,13 @@ from huggingface_hub import HfApi
 
 api = HfApi(token=HF_TOKEN)
 api.create_repo(HF_REPO_GGUF, repo_type="model", exist_ok=True)
+
+# Skip upload if the file is already present on HF (saves bandwidth on re-runs)
+if not _args.force_upload and api.file_exists(repo_id=HF_REPO_GGUF, filename="model.gguf", repo_type="model"):
+    print(f"model.gguf already exists in https://huggingface.co/{HF_REPO_GGUF} — skipping upload.")
+    print("Run with --force-upload to overwrite.")
+    print(f"  Ollama: ollama run hf.co/{HF_REPO_GGUF}")
+    sys.exit(0)
 
 size_gb = os.path.getsize(GGUF_FILE) / 1e9
 print(f"Uploading model.gguf ({size_gb:.2f} GB) to https://huggingface.co/{HF_REPO_GGUF} ...")

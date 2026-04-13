@@ -7,8 +7,10 @@
 # downgrade/restore automatically.
 #
 # Usage:
-#   ./run_pipeline.sh            # full run
-#   ./run_pipeline.sh --gguf-only  # skip training, re-run conversion/upload
+#   ./run_pipeline.sh                       # full run (skips HF upload if already uploaded)
+#   ./run_pipeline.sh --force-upload        # full run, overwrite existing HF file
+#   ./run_pipeline.sh --gguf-only           # skip training, re-run conversion/upload
+#   ./run_pipeline.sh --gguf-only --force-upload
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,8 +22,10 @@ if [ -f ".venv/bin/activate" ]; then
 fi
 
 GGUF_ONLY=0
+FORCE_UPLOAD=""
 for arg in "$@"; do
-    [ "$arg" = "--gguf-only" ] && GGUF_ONLY=1
+    [ "$arg" = "--gguf-only" ]    && GGUF_ONLY=1
+    [ "$arg" = "--force-upload" ] && FORCE_UPLOAD="--force-upload"
 done
 
 if [ "$GGUF_ONLY" -eq 0 ]; then
@@ -35,7 +39,7 @@ fi
 echo "================================================================"
 echo "  Step 2 of 2: GGUF conversion + HuggingFace upload"
 echo "================================================================"
-python3 convert_and_upload_gguf.py
+python3 convert_and_upload_gguf.py $FORCE_UPLOAD
 
 echo ""
 echo "================================================================"
