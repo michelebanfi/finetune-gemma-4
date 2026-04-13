@@ -6,12 +6,18 @@
 # Config:   config.yaml  |  Credentials: .env (HF_TOKEN)
 # ==============================================================================
 import os
+import argparse
 from dotenv import load_dotenv
 load_dotenv()
 
 # Force console-friendly tqdm (avoids invisible HTML progress bars in some envs)
 os.environ["TQDM_DISABLE"] = "0"
 from tqdm.auto import tqdm
+
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--skip-gguf", action="store_true",
+                     help="Skip GGUF export — run convert_and_upload_gguf.py separately")
+_args = _parser.parse_args()
 
 # ==============================================================================
 # SECTION 1: INSTALLATION
@@ -75,7 +81,7 @@ OUTPUT_DIR            = _preset["output_dir"]
 GGUF_DIR              = _preset["gguf_dir"]
 
 # --- Export ---
-EXPORT_GGUF           = _export["gguf"]
+EXPORT_GGUF           = _export["gguf"] and not _args.skip_gguf
 GGUF_QUANTIZATION     = _export["gguf_quantization"]
 
 # --- Optional: Push to Hugging Face Hub ---

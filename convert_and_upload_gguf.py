@@ -80,16 +80,28 @@ else:
     print(f"  Input:  {GGUF_DIR}")
     print(f"  Output: {GGUF_FILE}")
     print()
-    result = subprocess.run(
-        [
-            "python3", CONVERTER,
-            GGUF_DIR,
-            "--outfile", GGUF_FILE,
-            "--outtype", GGUF_QUANTIZATION.lower(),
-            "--verbose",
-        ],
-        check=True,
-    )
+
+    # llama.cpp's converter requires transformers<=5.3.0 for Gemma-4 support.
+    # Downgrade before the subprocess, then restore — isolates the version change
+    # to just this script so the training script is unaffected.
+    print("Pinning transformers==5.3.0 for Gemma-4 GGUF compat ...")
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "transformers==5.3.0"], check=True)
+
+    try:
+        subprocess.run(
+            [
+                sys.executable, CONVERTER,
+                GGUF_DIR,
+                "--outfile", GGUF_FILE,
+                "--outtype", GGUF_QUANTIZATION.lower(),
+                "--verbose",
+            ],
+            check=True,
+        )
+    finally:
+        print("Restoring transformers==5.5.0 ...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "-q", "transformers==5.5.0"], check=True)
+
     size_gb = os.path.getsize(GGUF_FILE) / 1e9
     print(f"\nGGUF saved: {GGUF_FILE} ({size_gb:.2f} GB)")
 
