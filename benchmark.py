@@ -192,6 +192,24 @@ def run_task(
     return out_path
 
 
+# ── Adapter toggle helpers ────────────────────────────────────────────────────
+
+def _enable_adapter(model):
+    """Enable LoRA adapter (handles both PEFT API variants)."""
+    if hasattr(model, "enable_adapters"):
+        model.enable_adapters()
+    elif hasattr(model, "enable_adapter_layers"):
+        model.enable_adapter_layers()
+
+
+def _disable_adapter(model):
+    """Disable LoRA adapter (handles both PEFT API variants)."""
+    if hasattr(model, "disable_adapters"):
+        model.disable_adapters()
+    elif hasattr(model, "disable_adapter_layers"):
+        model.disable_adapter_layers()
+
+
 # ── Model loading helpers ─────────────────────────────────────────────────────
 
 def load_finetuned_model(cfg, lora_dir: str | None):
@@ -239,14 +257,14 @@ def main():
 
         # Fine-tuned model predictions
         if has_adapter:
-            model.enable_adapter_layers()
+            _enable_adapter(model)
         run_task(model, tokenizer, task, items, args.batch_size, "finetuned", args.output_dir)
 
         # Base model predictions (optional)
         if args.base and has_adapter:
-            model.disable_adapter_layers()
+            _disable_adapter(model)
             run_task(model, tokenizer, task, items, args.batch_size, "base", args.output_dir)
-            model.enable_adapter_layers()
+            _enable_adapter(model)
 
     print(f"\nAll done. Predictions saved to ./{args.output_dir}/")
     print("Next step: python evaluate.py --task " + " ".join(task_names))
