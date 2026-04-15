@@ -26,7 +26,7 @@ pipeline_tag: text-generation
 # gemma4-4b-sci
 
 > [!WARNING]
-> **Work in Progress.** This model is an early-stage research experiment. It has been trained for only 600 steps on a small subset of the available data, has received no formal benchmark evaluation, and should not be relied upon for any critical purpose. Expect rough edges, hallucinations, and factual errors. The roadmap section below describes planned improvements.
+> **Work in Progress.** This model is an early-stage research experiment trained for only 600 steps on a small subset of the available data. Draft ScholarQABench Tier 1 results are available (see Evaluation section) but it has not been fully evaluated and should not be relied upon for any critical purpose. Expect rough edges, hallucinations, and factual errors. The roadmap section below describes planned improvements.
 
 ## Model Summary
 
@@ -156,10 +156,27 @@ Both datasets were shuffled (seed=42) and normalized into Gemma 4's native chat 
 
 ## Evaluation
 
-> [!CAUTION]
-> **No formal benchmarks have been run.** Evaluation is a planned next step (see Roadmap below).
+### ScholarQABench (Tier 1 — single-paper tasks)
 
-Current evaluation consists of a qualitative side-by-side comparison between the base model and the fine-tuned model on 5 test questions:
+> [!NOTE]
+> **Draft results** from a 600-step training run on 30K examples. The model has no retrieval pipeline, so only Tier 1 tasks (where gold paper contexts are provided) are evaluated here. Tier 2 synthesis tasks (ScholarQA-CS/Bio/Neuro) require a live document corpus and are left for a future RAG-augmented variant. Citation scores are near zero because the model was not explicitly trained to cite retrieved passages — this is expected and is the primary gap vs. OpenScholar.
+
+Evaluated using [ScholarQABench](https://github.com/AkariAsai/ScholarQABench) with `temperature=0.1`, `max_new_tokens=256/512`, batch size 8 on an NVIDIA RTX 5090.
+
+| Task | Metric | gemma4-4b-sci | OpenScholar-8B | Delta |
+|---|---|---:|---:|---:|
+| SciFact (208) | Accuracy | **77.9%** | 76.4% | +1.5 |
+| PubMedQA (843) | Accuracy | **81.5%** | 76.0% | +5.5 |
+| QASA (1375) | ROUGE-L | 20.9 | 23.0 | −2.1 |
+| SciFact | Citation F1 | 0.0 | 68.9 | −68.9 |
+| PubMedQA | Citation F1 | 0.0 | 43.6 | −43.6 |
+| QASA | Citation F1 | 4.3 | 56.3 | −52.0 |
+
+**Key takeaway:** Correctness scores are competitive with or exceed OpenScholar-8B (an 8B model) despite this being a 4B model trained for only 600 steps. The citation gap is entirely explained by the absence of a retrieval pipeline — adding RAG grounding is the primary next step.
+
+### Qualitative comparison
+
+A side-by-side comparison between the base Gemma-4 model and the fine-tuned model on 5 open-ended scientific questions is run automatically after training and saved to `{output_dir}/test_results_*.txt`. Questions cover:
 
 1. CRISPR-Cas9 mechanisms and limitations
 2. AlphaFold2's approach to protein structure prediction
@@ -167,9 +184,7 @@ Current evaluation consists of a qualitative side-by-side comparison between the
 4. Dark matter candidates in particle physics
 5. Positive vs. negative climate feedback loops
 
-Generation parameters used: `temperature=1.0`, `top_p=0.95`, `top_k=64`, `max_new_tokens=512`.
-
-Planned formal evaluation target: **ScholarQABench** (introduced in the OpenScholar paper).
+Generation parameters: `temperature=1.0`, `top_p=0.95`, `top_k=64`, `max_new_tokens=512`.
 
 ## Model Formats
 
@@ -196,7 +211,8 @@ Planned formal evaluation target: **ScholarQABench** (introduced in the OpenScho
 - [ ] Fine-tune the **31B variant** (`unsloth/gemma-4-31B-it`) for higher capability
 - [ ] Extend training beyond 600 steps (full epoch or multi-epoch on expanded data)
 - [ ] Incorporate all available `OS_Train_Data` and `SciRIFF` examples (not just 15K subsets)
-- [ ] Run **ScholarQABench** evaluation and publish results
+- [x] Run **ScholarQABench** Tier 1 evaluation and publish results
+- [ ] Run **ScholarQABench** Tier 2 synthesis tasks (requires retrieval frontend)
 - [ ] Explore retrieval-augmented grounding (RAG pipeline)
 - [ ] Additional GGUF quantization levels once `llama.cpp` supports them for Gemma 4
 - [ ] DPO or preference optimization pass
