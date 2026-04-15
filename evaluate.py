@@ -58,8 +58,9 @@ def run_citation_eval(pred_path: str, flags: list[str], results_dir: str, task_n
     """Run citation_correctness_eval.py and capture results."""
     script = _eval_script_path()
     scripts_dir = os.path.dirname(script)
+    abs_pred_path = os.path.abspath(pred_path)
 
-    cmd = [sys.executable, script, "--f", os.path.abspath(pred_path)] + flags
+    cmd = [sys.executable, script, "--f", abs_pred_path] + flags
     print(f"  Running: {' '.join(cmd)}")
 
     result = subprocess.run(
@@ -69,19 +70,20 @@ def run_citation_eval(pred_path: str, flags: list[str], results_dir: str, task_n
         cwd=scripts_dir,  # script imports run_utils from same dir
     )
 
-    output = result.stdout + result.stderr
     if result.returncode != 0:
         print(f"  WARNING: eval script exited with code {result.returncode}")
-        print(output[-2000:])
+        print((result.stdout + result.stderr)[-2000:])
 
-    # Save raw output
+    # Save raw stdout+stderr for debugging
     os.makedirs(results_dir, exist_ok=True)
     raw_path = os.path.join(results_dir, f"{task_name}_{suffix}_raw.txt")
     with open(raw_path, "w") as f:
-        f.write(output)
+        f.write(result.stdout + result.stderr)
 
-    # Parse key metrics from output
-    scores = _parse_eval_output(output)
+    # Parse scores: prefer the .score_post_fix JSON the script writes
+    scores = _read_score_file(abs_pred_path) or _parse_stdout(result.stdout)
+    scores = _normalise_keys(scores)
+
     scores_path = os.path.join(results_dir, f"{task_name}_{suffix}_scores.json")
     with open(scores_path, "w") as f:
         json.dump(scores, f, indent=2)
@@ -90,45 +92,59 @@ def run_citation_eval(pred_path: str, flags: list[str], results_dir: str, task_n
     return scores
 
 
-def _parse_eval_output(output: str) -> dict:
-    """Extract numeric scores from the eval script's stdout."""
-    scores = {}
-    lines = output.split("\n")
-    for line in lines:
-        line_lower = line.lower()
-        # ROUGE scores
-        if "rouge-l" in line_lower or "rouge_l" in line_lower:
-            _extract_score(line, "rouge_l", scores)
-        if "rouge-1" in line_lower or "rouge_1" in line_lower:
-            _extract_score(line, "rouge_1", scores)
-        # Accuracy / match
-        if "accuracy" in line_lower or "exact match" in line_lower:
-            _extract_score(line, "accuracy", scores)
-        # Citation metrics
-        if "citation recall" in line_lower:
-            _extract_score(line, "citation_recall", scores)
-        if "citation precision" in line_lower:
-            _extract_score(line, "citation_precision", scores)
-        if "citation f1" in line_lower:
-            _extract_score(line, "citation_f1", scores)
-        # Also look for lines containing only numbers (fallback)
-        if ":" in line:
-            key_part, _, val_part = line.partition(":")
-            key_clean = key_part.strip().lower().replace(" ", "_").replace("-", "_")
+def _read_score_file(pred_path: str) -> dict | None:
+    """Read the .score_post_fix JSON file written by citation_correctness_eval.py."""
+    score_path = pred_path + ".score_post_fix"
+    if not os.path.exists(score_path):
+        return None
+    try:
+        with open(score_path) as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def _parse_stdout(stdout: str) -> dict:
+    """
+    Fallback: find the last line in stdout that looks like a Python dict repr
+    and parse it with ast.literal_eval.
+    """
+    import ast
+    for line in reversed(stdout.splitlines()):
+        line = line.strip()
+        if line.startswith("{") and line.endswith("}"):
             try:
-                val = float(val_part.strip().rstrip("%"))
-                if 0 <= val <= 100 and key_clean:
-                    scores.setdefault(key_clean, val)
-            except ValueError:
+                return ast.literal_eval(line)
+            except Exception:
                 pass
-    return scores
+    return {}
 
 
-def _extract_score(line: str, key: str, scores: dict):
-    import re
-    nums = re.findall(r"\d+\.\d+|\d+", line)
-    if nums:
-        scores[key] = float(nums[-1])
+def _normalise_keys(raw: dict) -> dict:
+    """
+    Map ScholarQABench raw key names to our canonical names and compute F1.
+    Raw keys: match, rougeL, rouge1, rouge2, citation_rec, citation_prec, length, str_em, str_hit
+    """
+    key_map = {
+        "match": "accuracy",
+        "rougeL": "rouge_l",
+        "rouge1": "rouge_1",
+        "rouge2": "rouge_2",
+        "citation_rec": "citation_recall",
+        "citation_prec": "citation_precision",
+    }
+    out = {}
+    for k, v in raw.items():
+        canonical = key_map.get(k, k)
+        out[canonical] = round(float(v), 2) if isinstance(v, (int, float)) else v
+
+    # Compute citation F1
+    rec = out.get("citation_recall")
+    prec = out.get("citation_precision")
+    if rec is not None and prec is not None and (rec + prec) > 0:
+        out["citation_f1"] = round(2 * prec * rec / (prec + rec), 2)
+
+    return out
 
 
 def run_rubric_eval(pred_path: str, results_dir: str, suffix: str) -> dict:
