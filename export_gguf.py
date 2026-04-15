@@ -6,15 +6,13 @@ Use when you already have the merged fp16 model in gguf_dir (produced by
 train.py) but need to re-run conversion or upload.
 
 Usage:
-    python3 export_gguf.py                  # skip upload if model.gguf already on HF
-    python3 export_gguf.py --force-upload   # overwrite existing HF file
+    python3 export_gguf.py   # always re-converts and overwrites existing HF file
 
 Reads config from config.yaml and HF_TOKEN from .env or environment.
 
 NOTE: llama.cpp's converter requires transformers<=5.3.0 for Gemma-4.
       This script handles the version pin automatically.
 """
-import argparse
 import os
 import sys
 import subprocess
@@ -23,11 +21,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from src.config import load_config
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--force-upload", action="store_true",
-                    help="Upload even if model.gguf already exists in the HF repo")
-args = parser.parse_args()
 
 cfg = load_config("config.yaml")
 
@@ -67,35 +60,34 @@ if not os.path.exists(CONVERTER):
 
 # ── Convert ───────────────────────────────────────────────────────────────────
 if os.path.exists(GGUF_FILE):
-    size_gb = os.path.getsize(GGUF_FILE) / 1e9
-    print(f"GGUF already exists: {GGUF_FILE} ({size_gb:.2f} GB) — skipping conversion.")
-    print("Delete model.gguf to force re-conversion.")
-else:
-    print(f"Converting to GGUF ({cfg.gguf_quantization}) ...")
-    print(f"  Input:  {cfg.gguf_dir}")
-    print(f"  Output: {GGUF_FILE}")
-    print()
+    print(f"Removing stale GGUF: {GGUF_FILE}")
+    os.remove(GGUF_FILE)
 
-    print("Pinning transformers==5.3.0 for Gemma-4 GGUF compat ...")
-    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "transformers==5.3.0"], check=True)
+print(f"Converting to GGUF ({cfg.gguf_quantization}) ...")
+print(f"  Input:  {cfg.gguf_dir}")
+print(f"  Output: {GGUF_FILE}")
+print()
 
-    try:
-        subprocess.run(
-            [
-                sys.executable, CONVERTER,
-                cfg.gguf_dir,
-                "--outfile", GGUF_FILE,
-                "--outtype", cfg.gguf_quantization.lower(),
-                "--verbose",
-            ],
-            check=True,
-        )
-    finally:
-        print("Restoring transformers==5.5.0 ...")
-        subprocess.run([sys.executable, "-m", "pip", "install", "-q", "transformers==5.5.0"], check=True)
+print("Pinning transformers==5.3.0 for Gemma-4 GGUF compat ...")
+subprocess.run([sys.executable, "-m", "pip", "install", "-q", "transformers==5.3.0"], check=True)
 
-    size_gb = os.path.getsize(GGUF_FILE) / 1e9
-    print(f"\nGGUF saved: {GGUF_FILE} ({size_gb:.2f} GB)")
+try:
+    subprocess.run(
+        [
+            sys.executable, CONVERTER,
+            cfg.gguf_dir,
+            "--outfile", GGUF_FILE,
+            "--outtype", cfg.gguf_quantization.lower(),
+            "--verbose",
+        ],
+        check=True,
+    )
+finally:
+    print("Restoring transformers==5.5.0 ...")
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "transformers==5.5.0"], check=True)
+
+size_gb = os.path.getsize(GGUF_FILE) / 1e9
+print(f"\nGGUF saved: {GGUF_FILE} ({size_gb:.2f} GB)")
 
 print()
 
@@ -113,12 +105,6 @@ from huggingface_hub import HfApi
 
 api = HfApi(token=cfg.hf_token)
 api.create_repo(cfg.hf_repo_gguf, repo_type="model", exist_ok=True)
-
-if not args.force_upload and api.file_exists(repo_id=cfg.hf_repo_gguf, filename="model.gguf", repo_type="model"):
-    print(f"model.gguf already exists in https://huggingface.co/{cfg.hf_repo_gguf} — skipping upload.")
-    print("Run with --force-upload to overwrite.")
-    print(f"  Ollama: ollama run hf.co/{cfg.hf_repo_gguf}")
-    sys.exit(0)
 
 size_gb = os.path.getsize(GGUF_FILE) / 1e9
 print(f"Uploading model.gguf ({size_gb:.2f} GB) to https://huggingface.co/{cfg.hf_repo_gguf} ...")
