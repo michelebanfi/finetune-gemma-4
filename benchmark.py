@@ -78,10 +78,12 @@ def load_data(task: BenchmarkTask) -> list[dict]:
 def _ctx_list(item: dict, task: BenchmarkTask) -> list[dict]:
     """Return the list of context dicts to include in the prediction output."""
     if task.task_type == "claim_verification" or task.task_type == "yesno_qa":
-        ctx = item.get("gold_ctx", {})
-        if ctx:
-            return [{"title": ctx.get("title", ""), "text": ctx.get("text", "")}]
-        return []
+        gold_ctx = item.get("gold_ctx")
+        if not gold_ctx:
+            return []
+        if isinstance(gold_ctx, list):
+            return [{"title": c.get("title", ""), "text": c.get("text", "")} for c in gold_ctx if isinstance(c, dict)]
+        return [{"title": gold_ctx.get("title", ""), "text": gold_ctx.get("text", "")}]
     elif task.task_type == "longform_qa":
         ctxs = item.get("ctxs", [])
         gold_indices = item.get("gold_ctxs", [])
