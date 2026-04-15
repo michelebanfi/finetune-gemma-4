@@ -59,7 +59,7 @@ def run_citation_eval(pred_path: str, flags: list[str], results_dir: str, task_n
     script = _eval_script_path()
     scripts_dir = os.path.dirname(script)
 
-    cmd = [sys.executable, script, "--f", pred_path] + flags
+    cmd = [sys.executable, script, "--f", os.path.abspath(pred_path)] + flags
     print(f"  Running: {' '.join(cmd)}")
 
     result = subprocess.run(
