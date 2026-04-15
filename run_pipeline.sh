@@ -1,14 +1,9 @@
 #!/usr/bin/env bash
-# Full pipeline: fine-tune → GGUF conversion → HuggingFace upload
-#
-# Runs training and GGUF export as separate Python processes to avoid the
-# transformers version conflict (training needs 5.5.0, llama.cpp converter
-# needs 5.3.0 for Gemma-4). export_gguf.py handles the downgrade/restore
-# automatically.
+# Full pipeline: fine-tune → merge → GGUF conversion → HuggingFace upload
 #
 # Usage:
-#   ./run_pipeline.sh             # full run — always re-converts GGUF and overwrites HF
-#   ./run_pipeline.sh --gguf-only # skip training, re-run conversion/upload only
+#   ./run_pipeline.sh             # full run (train + merge + GGUF + upload)
+#   ./run_pipeline.sh --gguf-only # skip training; re-convert + upload from existing safetensors
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -25,16 +20,15 @@ done
 
 if [ "$GGUF_ONLY" -eq 0 ]; then
     echo "================================================================"
-    echo "  Step 1 of 2: Fine-tuning (GGUF export delegated to step 2)"
+    echo "  Fine-tuning + merge + GGUF conversion + HuggingFace upload"
     echo "================================================================"
-    python3 train.py --skip-gguf
-    echo ""
+    python3 train.py
+else
+    echo "================================================================"
+    echo "  GGUF conversion + HuggingFace upload (skipping training)"
+    echo "================================================================"
+    python3 export_gguf.py
 fi
-
-echo "================================================================"
-echo "  Step 2 of 2: GGUF conversion + HuggingFace upload"
-echo "================================================================"
-python3 export_gguf.py
 
 echo ""
 echo "================================================================"
