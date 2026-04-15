@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/home/sm1/lino/finetune-gemma-4/src/../../ScholarQABench/scripts/citation_correctness_eval.py", line 761, in <module>
+    main()
+  File "/home/sm1/lino/finetune-gemma-4/src/../../ScholarQABench/scripts/citation_correctness_eval.py", line 685, in main
+    data = load_jsonlines(file_name)   
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sm1/lino/ScholarQABench/scripts/run_utils.py", line 55, in load_jsonlines
+    with jsonlines.open(file, 'r') as jsonl_f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sm1/lino/finetune-gemma-4/.venv/lib/python3.12/site-packages/jsonlines/jsonlines.py", line 643, in open
+    fp = builtins.open(file, mode=mode + "t", encoding=encoding)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'predictions/pubmedqa_finetuned.jsonl'
