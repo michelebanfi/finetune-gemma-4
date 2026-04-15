@@ -17,10 +17,17 @@ def build_prompt(item: dict, task: BenchmarkTask) -> str:
         raise ValueError(f"Unknown task_type: {task.task_type}")
 
 
+def _extract_ctx(gold_ctx) -> tuple[str, str]:
+    """Normalise gold_ctx, which may be a dict or a list of dicts."""
+    if isinstance(gold_ctx, list):
+        ctx = gold_ctx[0] if gold_ctx else {}
+    else:
+        ctx = gold_ctx or {}
+    return ctx.get("title", ""), ctx.get("text", "")
+
+
 def _scifact_prompt(item: dict) -> str:
-    ctx = item["gold_ctx"]
-    title = ctx.get("title", "")
-    text = ctx.get("text", "")
+    title, text = _extract_ctx(item["gold_ctx"])
     claim = item["input"]
     return (
         "You are a scientific fact-checker. Given the paper excerpt below, "
@@ -33,9 +40,7 @@ def _scifact_prompt(item: dict) -> str:
 
 
 def _pubmedqa_prompt(item: dict) -> str:
-    ctx = item["gold_ctx"]
-    title = ctx.get("title", "")
-    text = ctx.get("text", "")
+    title, text = _extract_ctx(item["gold_ctx"])
     question = item["input"]
     return (
         "You are a biomedical research assistant. Based on the abstract below, "
