@@ -36,7 +36,7 @@ pipeline_tag: text-generation
 
 This work is directly inspired by and builds upon:
 
-- **[OpenScholar](https://allenai.org/blog/nature-openscilm)** — *OpenScholar: Synthesizing Scientific Literature with Retrieval-Augmented LMs* by Asai et al. (2024, Allen Institute for AI). OpenScholar demonstrated that LLMs fine-tuned on curated scientific instruction data can synthesize research literature at expert level. The training corpus used here (`OpenSciLM/OS_Train_Data`) originates from that project.
+- **[OpenScholar](https://allenai.org/blog/nature-openscilm)** — _OpenScholar: Synthesizing Scientific Literature with Retrieval-Augmented LMs_ by Asai et al. (2024, Allen Institute for AI). OpenScholar demonstrated that LLMs fine-tuned on curated scientific instruction data can synthesize research literature at expert level. The training corpus used here (`OpenSciLM/OS_Train_Data`) originates from that project.
 
 - **[`OpenSciLM/Llama-3.1_OpenScholar-8B`](https://huggingface.co/OpenSciLM/Llama-3.1_OpenScholar-8B)** — the reference OpenScholar model fine-tuned on Llama 3.1 8B, which serves as the methodological blueprint for this effort.
 
@@ -45,12 +45,14 @@ This work is directly inspired by and builds upon:
 ## Intended Uses
 
 **Suitable for:**
+
 - Research assistance and scientific Q&A (qualitative exploration, not authoritative answers)
 - Summarizing and explaining scientific concepts
 - Draft generation for scientific writing (with human review)
 - Experimentation and research into scientific LLM fine-tuning
 
 **Out of scope / not recommended:**
+
 - Clinical, medical, or legal decision-making
 - Any application requiring verifiable citations (the model can hallucinate references)
 - Production deployment without further evaluation and alignment work
@@ -97,10 +99,10 @@ print(tokenizer.decode(output[0][input_ids.shape[1]:], skip_special_tokens=True)
 
 ### Base Model
 
-| | |
-|---|---|
-| Model | `unsloth/gemma-4-E4B-it` |
-| Architecture | Gemma 4 (E4B instruction-tuned), multimodal |
+|                   |                                              |
+| ----------------- | -------------------------------------------- |
+| Model             | `unsloth/gemma-4-E4B-it`                     |
+| Architecture      | Gemma 4 (E4B instruction-tuned), multimodal  |
 | Fine-tuned layers | Language layers only (vision encoder frozen) |
 
 ### Method
@@ -111,31 +113,31 @@ print(tokenizer.decode(output[0][input_ids.shape[1]:], skip_special_tokens=True)
 
 ### LoRA Configuration
 
-| Parameter | Value |
-|---|---|
-| `lora_r` | 16 |
-| `lora_alpha` | 32 |
-| `lora_dropout` | 0 |
-| `bias` | none |
+| Parameter      | Value                                  |
+| -------------- | -------------------------------------- |
+| `lora_r`       | 16                                     |
+| `lora_alpha`   | 32                                     |
+| `lora_dropout` | 0                                      |
+| `bias`         | none                                   |
 | Target modules | Attention + MLP (language layers only) |
-| Vision layers | Frozen (not fine-tuned) |
+| Vision layers  | Frozen (not fine-tuned)                |
 
 ### Training Hyperparameters
 
-| Parameter | Value |
-|---|---|
-| Learning rate | 2e-4 |
-| LR scheduler | Cosine |
-| Warmup steps | 60 |
-| Optimizer | `adamw_8bit` |
-| Weight decay | 0.01 |
-| Max sequence length | 4096 |
-| Per-device batch size | 1 |
-| Gradient accumulation | 16 |
-| **Effective batch size** | **16** |
-| Number of epochs | 1 (capped at **600 steps**) |
-| Precision | bf16 |
-| Seed | 42 |
+| Parameter                | Value                       |
+| ------------------------ | --------------------------- |
+| Learning rate            | 2e-4                        |
+| LR scheduler             | Cosine                      |
+| Warmup steps             | 60                          |
+| Optimizer                | `adamw_8bit`                |
+| Weight decay             | 0.01                        |
+| Max sequence length      | 4096                        |
+| Per-device batch size    | 1                           |
+| Gradient accumulation    | 16                          |
+| **Effective batch size** | **16**                      |
+| Number of epochs         | 1 (capped at **600 steps**) |
+| Precision                | bf16                        |
+| Seed                     | 42                          |
 
 ### Hardware
 
@@ -143,11 +145,11 @@ Trained on a single **NVIDIA RTX 5090 (32 GB VRAM)**.
 
 ## Training Data
 
-| Dataset | Samples used | Total available |
-|---|---|---|
-| [`OpenSciLM/OS_Train_Data`](https://huggingface.co/datasets/OpenSciLM/OS_Train_Data) | 15,000 | ~130,000 |
-| [`allenai/SciRIFF-train-mix`](https://huggingface.co/datasets/allenai/SciRIFF-train-mix) | 15,000 | ~70,000 |
-| **Total** | **30,000** | — |
+| Dataset                                                                                  | Samples used | Total available |
+| ---------------------------------------------------------------------------------------- | ------------ | --------------- |
+| [`OpenSciLM/OS_Train_Data`](https://huggingface.co/datasets/OpenSciLM/OS_Train_Data)     | 15,000       | ~130,000        |
+| [`allenai/SciRIFF-train-mix`](https://huggingface.co/datasets/allenai/SciRIFF-train-mix) | 15,000       | ~70,000         |
+| **Total**                                                                                | **30,000**   | —               |
 
 Both datasets were shuffled (seed=42) and normalized into Gemma 4's native chat format (role `assistant` remapped to `model`).
 
@@ -163,16 +165,33 @@ Both datasets were shuffled (seed=42) and normalized into Gemma 4's native chat 
 
 Evaluated using [ScholarQABench](https://github.com/AkariAsai/ScholarQABench) with `temperature=0.1`, `max_new_tokens=256/512`, batch size 8 on an NVIDIA RTX 5090.
 
-| Task | Metric | gemma4-4b-sci | OpenScholar-8B | Delta |
-|---|---|---:|---:|---:|
-| SciFact (208) | Accuracy | **77.9%** | 76.4% | +1.5 |
-| PubMedQA (843) | Accuracy | **81.5%** | 76.0% | +5.5 |
-| QASA (1375) | ROUGE-L | 20.9 | 23.0 | −2.1 |
-| SciFact | Citation F1 | 0.0 | 68.9 | −68.9 |
-| PubMedQA | Citation F1 | 0.0 | 43.6 | −43.6 |
-| QASA | Citation F1 | 4.3 | 56.3 | −52.0 |
+#### Tier 1 — single-paper tasks (gold context provided, fair comparison)
 
-**Key takeaway:** Correctness scores are competitive with or exceed OpenScholar-8B (an 8B model) despite this being a 4B model trained for only 600 steps. The citation gap is entirely explained by the absence of a retrieval pipeline — adding RAG grounding is the primary next step.
+| Task           | Metric      | gemma4-4b-sci | OpenScholar-8B | Delta |
+| -------------- | ----------- | ------------: | -------------: | ----: |
+| SciFact (208)  | Accuracy    |     **77.9%** |          76.4% |  +1.5 |
+| PubMedQA (843) | Accuracy    |     **81.5%** |          76.0% |  +5.5 |
+| QASA (1375)    | ROUGE-L     |          20.9 |           23.0 |  −2.1 |
+| SciFact        | Citation F1 |           0.0 |           68.9 | −68.9 |
+| PubMedQA       | Citation F1 |           0.0 |           43.6 | −43.6 |
+| QASA           | Citation F1 |           4.3 |           56.3 | −52.0 |
+
+**Key takeaway:** Correctness scores are competitive with or exceed OpenScholar-8B (an 8B model) despite this being a 4B model trained for only 600 steps. The citation gap is entirely explained by the absence of a retrieval pipeline.
+
+#### Tier 2 — multi-document synthesis (no retrieval, informational only)
+
+> These tasks require synthesizing across many papers. Without a retrieval pipeline, the model answers from parametric knowledge only. Citation recall/precision of 0.0 is expected and matches the no-retrieval Llama-8B baseline in the OpenScholar paper. The model generates ~17–19 citation brackets per answer (it learned the citation style from training data) but they cannot be verified without real retrieved documents.
+
+| Task                   | Metric           | gemma4-4b-sci | OpenScholar-8B |
+| ---------------------- | ---------------- | ------------: | -------------: |
+| ScholarQA-CS (110)     | Citation F1      |           0.0 |           47.9 |
+| ScholarQA-CS (110)     | Avg. citations   |          18.7 |            —   |
+| ScholarQA-Bio (1451)   | Citation F1      |           0.0 |           42.8 |
+| ScholarQA-Bio (1451)   | Avg. citations   |          19.3 |            —   |
+| ScholarQA-Neuro (1308) | Citation F1      |           0.0 |           50.8 |
+| ScholarQA-Neuro (1308) | Avg. citations   |          17.0 |            —   |
+
+Rubric correctness scores for ScholarQA-CS (which require a GPT-4 judge) are not reported here. Adding a retrieval frontend is the necessary next step to make Tier 2 citation scores meaningful.
 
 ### Qualitative comparison
 
@@ -188,11 +207,11 @@ Generation parameters: `temperature=1.0`, `top_p=0.95`, `top_k=64`, `max_new_tok
 
 ## Model Formats
 
-| Format | Notes |
-|---|---|
+| Format                     | Notes                                      |
+| -------------------------- | ------------------------------------------ |
 | LoRA adapter (safetensors) | Applies on top of `unsloth/gemma-4-E4B-it` |
-| Merged fp16 (safetensors) | Full model weights |
-| **Q8_0 GGUF** | **Primary release format; Ollama-ready** |
+| Merged fp16 (safetensors)  | Full model weights                         |
+| **Q8_0 GGUF**              | **Primary release format; Ollama-ready**   |
 
 > Gemma 4's GGUF export is currently restricted to Q8_0, BF16, and F16 quantizations via `llama.cpp`. Lower-bit quantizations (Q4_K_M, Q5_K_M, etc.) will be added once support is available upstream.
 
@@ -208,8 +227,6 @@ Generation parameters: `temperature=1.0`, `top_p=0.95`, `top_k=64`, `max_new_tok
 
 ## Roadmap
 
-- [ ] Fine-tune the **31B variant** (`unsloth/gemma-4-31B-it`) for higher capability
-- [ ] Extend training beyond 600 steps (full epoch or multi-epoch on expanded data)
 - [ ] Incorporate all available `OS_Train_Data` and `SciRIFF` examples (not just 15K subsets)
 - [x] Run **ScholarQABench** Tier 1 evaluation and publish results
 - [ ] Run **ScholarQABench** Tier 2 synthesis tasks (requires retrieval frontend)
@@ -255,5 +272,6 @@ If you use this model, please also cite the underlying works that made it possib
 ## License
 
 This model is released under the [Gemma Terms of Use](https://ai.google.dev/gemma/terms). Use is subject to Google's Gemma license. The training datasets retain their respective licenses:
+
 - `OpenSciLM/OS_Train_Data`: see [OpenSciLM dataset page](https://huggingface.co/datasets/OpenSciLM/OS_Train_Data)
 - `allenai/SciRIFF-train-mix`: ODC-BY (Open Data Commons Attribution License)
