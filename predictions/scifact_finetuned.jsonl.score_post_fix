@@ -2,6 +2,9 @@
     "length": 37.0,
     "str_em": 0,
     "str_hit": 0,
+    "rougeL": 7.442550327832535,
+    "rouge1": 7.560005264588221,
+    "rouge2": 0.0,
     "match": 77.88461538461539,
     "citation_rec": 0.0,
     "citation_prec": 0.0

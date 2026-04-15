@@ -1,4 +1,12 @@
 {
-  "accuracy": 3.0,
-  "rouge_l": 3.0
+  "length": 115.55,
+  "str_em": 0.0,
+  "str_hit": 0.0,
+  "rouge_l": 20.92,
+  "rouge_1": 27.42,
+  "rouge_2": 13.39,
+  "citation_recall": 3.45,
+  "citation_precision": 5.52,
+  "cited_paper_numbers": 1.58,
+  "citation_f1": 4.25
 }

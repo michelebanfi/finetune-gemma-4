@@ -1,3 +1,11 @@
 {
-  "accuracy": 1.0
+  "length": 40.77,
+  "str_em": 0.0,
+  "str_hit": 0.0,
+  "rouge_l": 9.44,
+  "rouge_1": 9.37,
+  "rouge_2": 0.0,
+  "accuracy": 81.49,
+  "citation_recall": 0.0,
+  "citation_precision": 0.0
 }

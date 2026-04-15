@@ -1,1 +1,11 @@
-{}
+{
+  "length": 37.0,
+  "str_em": 0.0,
+  "str_hit": 0.0,
+  "rouge_l": 7.44,
+  "rouge_1": 7.56,
+  "rouge_2": 0.0,
+  "accuracy": 77.88,
+  "citation_recall": 0.0,
+  "citation_precision": 0.0
+}
