@@ -14,12 +14,11 @@ SCHOLARQABENCH_DIR = os.environ.get(
 class BenchmarkTask:
     name: str
     data_path: str            # path relative to SCHOLARQABENCH_DIR (or absolute)
-    task_type: str            # "claim_verification" | "yesno_qa" | "longform_qa" | "synthesis"
+    task_type: str            # "claim_verification" | "yesno_qa" | "longform_qa"
     has_gold_ctx: bool        # whether gold context is available in the data
     max_new_tokens: int
     eval_flags: list          # flags passed to citation_correctness_eval.py
     tier: int                 # 1 = fair comparison, 2 = informational only
-    data_format: str = "jsonl"  # "jsonl" or "json"
 
     @property
     def abs_data_path(self) -> str:
@@ -56,34 +55,6 @@ BENCHMARK_TASKS: dict[str, BenchmarkTask] = {
         eval_flags=["--citations"],
         tier=1,
     ),
-    "scholarqa_cs": BenchmarkTask(
-        name="scholarqa_cs",
-        data_path="data/scholarqa_cs/test_configs_snippets.json",
-        task_type="synthesis",
-        has_gold_ctx=False,
-        max_new_tokens=1024,
-        eval_flags=["--citations"],
-        tier=2,
-        data_format="json",
-    ),
-    "scholarqa_bio": BenchmarkTask(
-        name="scholarqa_bio",
-        data_path="data/scholarqa_bio/scholarqabench_bio.jsonl",
-        task_type="synthesis",
-        has_gold_ctx=False,
-        max_new_tokens=1024,
-        eval_flags=["--citations"],
-        tier=2,
-    ),
-    "scholarqa_neuro": BenchmarkTask(
-        name="scholarqa_neuro",
-        data_path="data/scholarqa_neuro/scholarqabench_neuro.jsonl",
-        task_type="synthesis",
-        has_gold_ctx=False,
-        max_new_tokens=1024,
-        eval_flags=["--citations"],
-        tier=2,
-    ),
 }
 
 # OpenScholar-8B reference scores for comparison table
@@ -91,7 +62,4 @@ OPENSCHOLAR_8B_SCORES = {
     "scifact":      {"correctness": 76.4, "citation_f1": 68.9, "metric": "accuracy"},
     "pubmedqa":     {"correctness": 76.0, "citation_f1": 43.6, "metric": "accuracy"},
     "qasa":         {"correctness": 23.0, "citation_f1": 56.3, "metric": "rouge-l"},
-    "scholarqa_cs": {"correctness": 51.1, "citation_f1": 47.9, "metric": "rubric"},
-    "scholarqa_bio":   {"correctness": None, "citation_f1": 42.8, "metric": "n/a"},
-    "scholarqa_neuro": {"correctness": None, "citation_f1": 50.8, "metric": "n/a"},
 }

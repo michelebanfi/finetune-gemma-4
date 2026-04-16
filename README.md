@@ -24,7 +24,7 @@ pipeline_tag: text-generation
 # gemma4-4b-sci
 
 > [!WARNING]
-> Early-stage research experiment. Trained for 600 steps on 30K examples. Expect hallucinations and factual errors.
+> Early-stage research experiment. Trained for 1 epoch on 30K examples. Expect hallucinations and factual errors.
 
 **gemma4-4b-sci** is a scientific-domain fine-tune of [Gemma 4 E4B](https://huggingface.co/unsloth/gemma-4-E4B-it) via QLoRA on 30,000 examples from [OpenSciLM/OS_Train_Data](https://huggingface.co/datasets/OpenSciLM/OS_Train_Data) and [SciRIFF](https://huggingface.co/datasets/allenai/SciRIFF-train-mix). Inspired by [OpenScholar](https://allenai.org/blog/nature-openscilm) — this is a **generation-only** model without a retrieval pipeline.
 
@@ -33,27 +33,27 @@ pipeline_tag: text-generation
 - **Developed by:** Michele Banfi
 - **Base model:** `unsloth/gemma-4-E4B-it`
 - **Method:** QLoRA (4-bit) + SFT via Unsloth, language layers only (vision encoder frozen)
-- **Training:** 600 steps, 30K examples (15K OS_Train_Data + 15K SciRIFF), NVIDIA RTX 5090
+- **Training:** 1 epoch, 30K examples (15K OS_Train_Data + 15K SciRIFF), NVIDIA RTX 5090
 - **License:** [Gemma Terms of Use](https://ai.google.dev/gemma/terms)
 
 ### Model Sources
 
 - **Repository:** https://github.com/michelebanfi/gemma-4-finetuning
 - **Evaluation:** [ScholarQABench](https://github.com/AkariAsai/ScholarQABench)
-- **Ollama:** `ollama run hf.co/linosium/gemma4-4b-sci`
+- **Ollama:** `ollama run hf.co/michelinolinolino/gemma4-4b-sci`
 
 ## Quick Start
 
 ```bash
-ollama run hf.co/linosium/gemma4-4b-sci
+ollama run hf.co/michelinolinolino/gemma4-4b-sci
 ```
 
 ```python
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 
-model = AutoModelForCausalLM.from_pretrained("linosium/gemma4-4b-sci", torch_dtype=torch.bfloat16, device_map="auto")
-tokenizer = AutoTokenizer.from_pretrained("linosium/gemma4-4b-sci")
+model = AutoModelForCausalLM.from_pretrained("michelinolinolino/gemma4-4b-sci", torch_dtype=torch.bfloat16, device_map="auto")
+tokenizer = AutoTokenizer.from_pretrained("michelinolinolino/gemma4-4b-sci")
 
 messages = [{"role": "user", "content": "Explain the role of CRISPR-Cas9 in gene editing."}]
 input_ids = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to(model.device)
@@ -62,9 +62,7 @@ print(tokenizer.decode(model.generate(input_ids, max_new_tokens=512)[0][input_id
 
 ## Evaluation
 
-[ScholarQABench](https://github.com/AkariAsai/ScholarQABench) — draft results, 600-step run. Tier 1 uses gold paper contexts (fair comparison). Tier 2 has no retrieval, so citation scores are 0 by design.
-
-**Tier 1 — single-paper tasks**
+[ScholarQABench](https://github.com/AkariAsai/ScholarQABench) — draft results, 1-epoch run. Gold paper contexts provided (fair comparison with OpenScholar-8B).
 
 | Task | Metric | gemma4-4b-sci | OpenScholar-8B |
 |---|---|---:|---:|
@@ -75,15 +73,7 @@ print(tokenizer.decode(model.generate(input_ids, max_new_tokens=512)[0][input_id
 | PubMedQA | Citation F1 | 0.0 | 43.6 |
 | QASA | Citation F1 | 4.3 | 56.3 |
 
-Correctness matches or exceeds OpenScholar-8B (2× the parameters) at 600 steps. Citation gap is entirely due to the missing retrieval pipeline.
-
-**Tier 2 — synthesis tasks (no retrieval)**
-
-| Task | Citation F1 | OpenScholar-8B |
-|---|---:|---:|
-| ScholarQA-CS (110) | 0.0 | 47.9 |
-| ScholarQA-Bio (1451) | 0.0 | 42.8 |
-| ScholarQA-Neuro (1308) | 0.0 | 50.8 |
+Correctness matches or exceeds OpenScholar-8B (2× the parameters) at 1 epoch. Citation gap is entirely due to the missing retrieval pipeline.
 
 ## Citation
 

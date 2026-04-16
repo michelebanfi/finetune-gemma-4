@@ -55,22 +55,13 @@ def load_data(task: BenchmarkTask) -> list[dict]:
             "Set SCHOLARQABENCH_DIR env var or clone https://github.com/AkariAsai/ScholarQABench"
         )
 
-    if task.data_format == "json":
-        with open(path) as f:
-            raw = json.load(f)
-        # ScholarQA-CS is a list of dicts with initial_prompt, case_id, etc.
-        if isinstance(raw, list):
-            return [{"input": item["initial_prompt"], "_case_id": item.get("case_id", "")} for item in raw]
-        else:
-            return [{"input": item["initial_prompt"], "_case_id": item.get("case_id", "")} for item in raw.values()]
-    else:
-        items = []
-        with open(path) as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    items.append(json.loads(line))
-        return items
+    items = []
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                items.append(json.loads(line))
+    return items
 
 
 # ── Context extraction ────────────────────────────────────────────────────────
@@ -94,7 +85,6 @@ def _ctx_list(item: dict, task: BenchmarkTask) -> list[dict]:
                 result.append({"title": c.get("title", ""), "text": c.get("text", "")})
         return result
     else:
-        # synthesis tasks: no retrieval
         return []
 
 

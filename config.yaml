@@ -48,4 +48,4 @@ export:
 hub:
   hf_token: null # Leave null — token is read from HF_TOKEN in .env
   hf_repo: null # Unused (LoRA push disabled)
-  hf_repo_gguf: linosium/gemma4-4b-sci # e.g. "your-username/gemma4-4b-sci"
+  hf_repo_gguf: michelinolinolino/gemma4-4b-sci # e.g. "your-username/gemma4-4b-sci"

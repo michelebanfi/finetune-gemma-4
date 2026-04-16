@@ -11,8 +11,6 @@ def build_prompt(item: dict, task: BenchmarkTask) -> str:
         return _pubmedqa_prompt(item)
     elif task.task_type == "longform_qa":
         return _qasa_prompt(item)
-    elif task.task_type == "synthesis":
-        return _synthesis_prompt(item)
     else:
         raise ValueError(f"Unknown task_type: {task.task_type}")
 
@@ -82,17 +80,6 @@ def _qasa_prompt(item: dict) -> str:
 
     return (
         f"{ctx_instruction}"
-        f"Question: {question}\n\n"
-        "Answer:"
-    )
-
-
-def _synthesis_prompt(item: dict) -> str:
-    question = item["input"]
-    return (
-        "You are a scientific research assistant. Provide a comprehensive, well-organized "
-        "answer to the following research question based on your knowledge of the scientific "
-        "literature. Cite relevant findings using bracketed numbers (e.g., [1], [2], [3]).\n\n"
         f"Question: {question}\n\n"
         "Answer:"
     )
