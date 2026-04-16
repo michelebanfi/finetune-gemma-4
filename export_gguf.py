@@ -14,8 +14,10 @@ NOTE: llama.cpp's converter requires transformers<=5.3.0 for Gemma-4.
       This script handles the version pin automatically.
 """
 import os
+import shutil
 import sys
 import subprocess
+import tempfile
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -108,12 +110,14 @@ api.create_repo(cfg.hf_repo_gguf, repo_type="model", exist_ok=True)
 
 size_gb = os.path.getsize(GGUF_FILE) / 1e9
 print(f"Uploading model.gguf ({size_gb:.2f} GB) to https://huggingface.co/{cfg.hf_repo_gguf} ...")
-api.upload_file(
-    path_or_fileobj=GGUF_FILE,
-    path_in_repo="model.gguf",
-    repo_id=cfg.hf_repo_gguf,
-    repo_type="model",
-)
+with tempfile.TemporaryDirectory() as tmp:
+    shutil.copy2(GGUF_FILE, os.path.join(tmp, "model.gguf"))
+    api.upload_large_folder(
+        folder_path=tmp,
+        repo_id=cfg.hf_repo_gguf,
+        repo_type="model",
+        allow_patterns=["model.gguf"],
+    )
 
 print()
 print("Upload complete!")

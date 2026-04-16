@@ -67,6 +67,9 @@ def convert_to_gguf(cfg: Config, script_dir: str) -> str:
 
 def upload_to_hub(gguf_file: str, cfg: Config):
     """Upload GGUF file to HuggingFace Hub."""
+    import shutil
+    import tempfile
+
     if not cfg.hf_token or not cfg.hf_repo_gguf:
         print(f"\n[GGUF 3/3] Skipping upload (HF_TOKEN or hf_repo_gguf not set).")
         print(f"  To run with Ollama locally:")
@@ -80,11 +83,13 @@ def upload_to_hub(gguf_file: str, cfg: Config):
 
     size_gb = round(os.path.getsize(gguf_file) / 1e9, 2)
     print(f"\n[GGUF 3/3] Uploading model.gguf ({size_gb} GB) to https://huggingface.co/{cfg.hf_repo_gguf} ...")
-    api.upload_file(
-        path_or_fileobj=gguf_file,
-        path_in_repo="model.gguf",
-        repo_id=cfg.hf_repo_gguf,
-        repo_type="model",
-    )
+    with tempfile.TemporaryDirectory() as tmp:
+        shutil.copy2(gguf_file, os.path.join(tmp, "model.gguf"))
+        api.upload_large_folder(
+            folder_path=tmp,
+            repo_id=cfg.hf_repo_gguf,
+            repo_type="model",
+            allow_patterns=["model.gguf"],
+        )
     print(f"  Upload complete: https://huggingface.co/{cfg.hf_repo_gguf}")
     print(f"  Run with Ollama: ollama run hf.co/{cfg.hf_repo_gguf}")
