@@ -1,0 +1,58 @@
+# ==============================================================================
+# Gemma-4 TikZ Fine-tuning Configuration
+# Change `model_preset` to switch between models: "4B" or "31B"
+# ==============================================================================
+
+model_preset: "4B"
+
+presets:
+  4B:
+    model_name: "unsloth/gemma-4-E4B-it"
+    max_seq_length: 8192          # TikZ code is verbose; 8K needed
+    lora_r: 16
+    lora_alpha: 32
+    per_device_batch_size: 1      # Conservative for 32GB VRAM with vision + long sequences
+    gradient_accumulation: 16     # Effective batch size = 1 * 16 = 16
+    output_dir: "./gemma4-4b-tikz-lora"
+    gguf_dir: "./gemma4-4b-tikz-gguf"
+
+  31B:
+    model_name: "unsloth/gemma-4-31B-it"
+    max_seq_length: 8192
+    lora_r: 16
+    lora_alpha: 32
+    per_device_batch_size: 1
+    gradient_accumulation: 8
+    output_dir: "./gemma4-31b-tikz-lora"
+    gguf_dir: "./gemma4-31b-tikz-gguf"
+
+# Shared training settings (apply to all presets)
+training:
+  learning_rate: 0.0001           # Gentler than sci task (0.0002) — vision layers + long sequences
+  warmup_steps: 100
+  lr_scheduler: "cosine"
+  num_train_epochs: 1
+  max_steps: -1                   # Set to -1 for a full epoch
+  weight_decay: 0.01
+  seed: 42
+  lora_dropout: 0
+  finetune_vision_layers: true    # Enable SigLIP vision encoder LoRA
+
+dataset:
+  name: "nllg/DaTikZ-V4"
+  subset_size: 30000              # Rows to train on (from 427K total)
+  eval_dataset: "nllg/datikz-v3" # Test split for evaluation (542 examples)
+  # Task ratios must sum to 1.0
+  task_ratios:
+    caption_to_code: 0.40         # Caption (text) → TikZ code — primary use case
+    image_to_description: 0.20   # Image → visual description — teaches TikZ visual understanding
+    image_to_code: 0.40          # Image + caption → TikZ code — multimodal generation
+
+export:
+  gguf: true
+  gguf_quantization: "Q8_0"      # Only Q8_0, BF16, F16 supported for Gemma-4
+
+hub:
+  hf_token: null                  # Leave null — token is read from HF_TOKEN in .env
+  hf_repo: null                   # Unused (LoRA push disabled)
+  hf_repo_gguf: null              # Set to e.g. "your-username/gemma4-4b-tikz" to upload
