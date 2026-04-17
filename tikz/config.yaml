@@ -31,7 +31,7 @@ training:
   learning_rate: 0.0001           # Gentler than sci task (0.0002) — vision layers + long sequences
   warmup_steps: 100
   lr_scheduler: "cosine"
-  num_train_epochs: 1
+  num_train_epochs: 3
   max_steps: -1                   # Set to -1 for a full epoch
   weight_decay: 0.01
   seed: 42
@@ -55,4 +55,4 @@ export:
 hub:
   hf_token: null                  # Leave null — token is read from HF_TOKEN in .env
   hf_repo: null                   # Unused (LoRA push disabled)
-  hf_repo_gguf: null              # Set to e.g. "your-username/gemma4-4b-tikz" to upload
+  hf_repo_gguf: michelinolinolino/gemma4-4b-tikz

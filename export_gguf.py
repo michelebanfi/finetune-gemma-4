@@ -64,4 +64,5 @@ if not cfg.hf_repo_gguf:
     print("hub.hf_repo_gguf not set in sci/config.yaml — skipping upload.")
     sys.exit(0)
 
-upload_to_hub(gguf_file, cfg)
+readme = os.path.join(SCRIPT_DIR, "sci", "README.md")
+upload_to_hub(gguf_file, cfg, readme_path=readme)

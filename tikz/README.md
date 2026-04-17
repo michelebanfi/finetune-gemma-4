@@ -20,9 +20,6 @@ pipeline_tag: text-generation
 
 # gemma4-4b-tikz
 
-> [!NOTE]
-> Draft model card placeholder for the TikZ fine-tune. Update hub links once the HuggingFace repo is created.
-
 **gemma4-4b-tikz** is a TikZ-focused fine-tune of Gemma 4, trained to improve generation of compilable TikZ/LaTeX figures from scientific captions and multimodal inputs.
 
 ## Model Description

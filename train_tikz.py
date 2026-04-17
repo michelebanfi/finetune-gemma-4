@@ -75,4 +75,5 @@ if cfg.export_gguf:
     script_dir = os.path.dirname(os.path.abspath(__file__))
     merge_and_save(model, tokenizer, cfg)
     gguf_file = convert_to_gguf(cfg, script_dir)
-    upload_to_hub(gguf_file, cfg)
+    readme = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tikz", "README.md")
+    upload_to_hub(gguf_file, cfg, readme_path=readme)
