@@ -1,17 +1,17 @@
-"""TikZ sub-project model helpers."""
+"""Scientific sub-project model helpers."""
 
 from common import modeling
-from tikz.config import TikZConfig
+from sci.config import Config
 
 
-def load_model_and_tokenizer(cfg: TikZConfig):
+def load_model_and_tokenizer(cfg: Config):
     return modeling.load_model_and_tokenizer(cfg.model_name, cfg.max_seq_length)
 
 
-def attach_lora(model, cfg: TikZConfig):
+def attach_lora(model, cfg: Config):
     return modeling.attach_lora(
         model,
-        finetune_vision_layers=cfg.finetune_vision_layers,
+        finetune_vision_layers=False,
         lora_r=cfg.lora_r,
         lora_alpha=cfg.lora_alpha,
         lora_dropout=cfg.lora_dropout,

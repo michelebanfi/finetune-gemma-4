@@ -21,7 +21,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from src.benchmark_config import BENCHMARK_TASKS, OPENSCHOLAR_8B_SCORES, SCHOLARQABENCH_DIR
+from sci.benchmark_config import BENCHMARK_TASKS, OPENSCHOLAR_8B_SCORES, SCHOLARQABENCH_DIR
 
 
 # ── Argument parsing ──────────────────────────────────────────────────────────

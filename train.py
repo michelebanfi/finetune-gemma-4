@@ -6,46 +6,39 @@ Pipeline: load → LoRA → dataset → train → save adapter → optional GGUF
 Run with:
     python3 train.py              # full run (train + GGUF export)
     python3 train.py --skip-gguf  # train only; run export_gguf.py separately
-Config:   config.yaml  |  Credentials: .env (HF_TOKEN)
+Config:   sci/config.yaml  |  Credentials: .env (HF_TOKEN)
 """
 import os
 import argparse
-import subprocess
-import sys
 
 from dotenv import load_dotenv
+from common.bootstrap import install_train_dependencies
+
 load_dotenv()
 
 os.environ["TQDM_DISABLE"] = "0"
 
 # ── Bootstrap dependencies ───────────────────────────────────────────────────
-def _install():
-    subprocess.run([
-        sys.executable, "-m", "pip", "install", "-q",
-        "torch>=2.8.0", "triton>=3.4.0",
-        "torchvision", "bitsandbytes",
-        "unsloth", "unsloth_zoo>=2026.4.6",
-        "transformers==5.5.0", "torchcodec", "timm",
-    ], check=True)
-
-_install()
+install_train_dependencies()
 
 # ── Imports (after install) ───────────────────────────────────────────────────
-from src.config import load_config
-from src.model import load_model_and_tokenizer, attach_lora
-from src.data import build_training_dataset
-from src.training import build_trainer, run_training
-from src.gguf import merge_and_save, convert_to_gguf, upload_to_hub
-from src.evaluation import run_comparison
+from sci.config import load_config
+from sci.model import load_model_and_tokenizer, attach_lora
+from sci.data import build_training_dataset
+from sci.training import build_trainer, run_training
+from common.gguf import merge_and_save, convert_to_gguf, upload_to_hub
+from sci.evaluation import run_comparison
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 parser = argparse.ArgumentParser()
 parser.add_argument("--skip-gguf", action="store_true",
                     help="Skip GGUF export — run export_gguf.py separately")
+parser.add_argument("--config", default="sci/config.yaml",
+                    help="Path to scientific config YAML (default: sci/config.yaml)")
 args = parser.parse_args()
 
 # ── Config ────────────────────────────────────────────────────────────────────
-cfg = load_config("config.yaml", skip_gguf=args.skip_gguf)
+cfg = load_config(args.config, skip_gguf=args.skip_gguf)
 print(f"Active preset: {cfg.model_name}")
 
 # ── Model + LoRA ──────────────────────────────────────────────────────────────

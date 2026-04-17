@@ -1,8 +1,6 @@
-"""
-Load and expose training configuration from tikz_config.yaml.
-"""
+"""Load and expose training configuration for the TikZ sub-project."""
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict
 import yaml
 
@@ -50,7 +48,12 @@ class TikZConfig:
     hf_repo_gguf: str | None
 
 
-def load_tikz_config(path: str = "tikz_config.yaml", skip_gguf: bool = False) -> TikZConfig:
+def _default_config_path() -> str:
+    return os.path.join(os.path.dirname(__file__), "config.yaml")
+
+
+def load_tikz_config(path: str | None = None, skip_gguf: bool = False) -> TikZConfig:
+    path = path or _default_config_path()
     with open(path) as f:
         raw = yaml.safe_load(f)
 

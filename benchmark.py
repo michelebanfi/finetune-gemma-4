@@ -21,11 +21,11 @@ from pathlib import Path
 import torch
 from tqdm import tqdm
 
-from src.benchmark_config import BENCHMARK_TASKS, BenchmarkTask
-from src.config import load_config
-from src.model import load_model_and_tokenizer
-from src.prompt_templates import build_prompt
-from src.answer_parser import normalize_scifact, normalize_pubmedqa
+from sci.benchmark_config import BENCHMARK_TASKS, BenchmarkTask
+from sci.config import load_config
+from sci.model import load_model_and_tokenizer
+from sci.prompt_templates import build_prompt
+from sci.answer_parser import normalize_scifact, normalize_pubmedqa
 
 
 # ── Argument parsing ─────────────────────────────────────────────────────────
@@ -40,7 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=4, help="Generation batch size")
     parser.add_argument("--limit", type=int, default=None, help="Max examples per task (debug mode)")
     parser.add_argument("--output-dir", default="predictions", help="Directory for prediction files")
-    parser.add_argument("--config", default="config.yaml", help="Path to config.yaml")
+    parser.add_argument("--config", default="sci/config.yaml", help="Path to sci/config.yaml")
     parser.add_argument("--lora-dir", default=None, help="Path to LoRA adapter dir (default: cfg.output_dir)")
     return parser.parse_args()
 
