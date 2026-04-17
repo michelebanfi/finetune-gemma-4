@@ -1,14 +1,10 @@
-"""
-SFTTrainer setup and training loop.
-"""
+"""Shared SFTTrainer build/run helpers."""
 import torch
 from trl import SFTTrainer, SFTConfig
 from unsloth.chat_templates import train_on_responses_only
 
-from src.config import Config
 
-
-def build_trainer(model, tokenizer, dataset, cfg: Config) -> SFTTrainer:
+def build_trainer(model, tokenizer, dataset, cfg) -> SFTTrainer:
     use_bf16 = torch.cuda.is_bf16_supported()
     use_fp16 = not use_bf16
     print(f"Mixed precision: {'bf16' if use_bf16 else 'fp16'}")
@@ -55,21 +51,19 @@ def build_trainer(model, tokenizer, dataset, cfg: Config) -> SFTTrainer:
         response_part="<|turn>model\n",
     )
 
-    # Verify masking
     print("Verifying response masking (should see only model turns):")
-    decoded_labels = tokenizer.decode([
-        tokenizer.pad_token_id if x == -100 else x
-        for x in trainer.train_dataset[0]["labels"]
-    ]).replace(tokenizer.pad_token, " ")
+    decoded_labels = tokenizer.decode(
+        [tokenizer.pad_token_id if x == -100 else x for x in trainer.train_dataset[0]["labels"]]
+    ).replace(tokenizer.pad_token, " ")
     print(decoded_labels[:300])
     print()
 
     return trainer
 
 
-def run_training(trainer: SFTTrainer) -> dict:
+def run_training(trainer: SFTTrainer, training_label: str = "fine-tuning") -> dict:
     print("=" * 60)
-    print("Starting fine-tuning...")
+    print(f"Starting {training_label}...")
     print("=" * 60)
 
     trainer_stats = trainer.train()

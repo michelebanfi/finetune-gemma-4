@@ -1,6 +1,4 @@
-"""
-Load and expose training configuration from config.yaml.
-"""
+"""Load and expose training configuration for the scientific sub-project."""
 import os
 from dataclasses import dataclass
 import yaml
@@ -46,7 +44,12 @@ class Config:
     hf_repo_gguf: str | None
 
 
-def load_config(path: str = "config.yaml", skip_gguf: bool = False) -> Config:
+def _default_config_path() -> str:
+    return os.path.join(os.path.dirname(__file__), "config.yaml")
+
+
+def load_config(path: str | None = None, skip_gguf: bool = False) -> Config:
+    path = path or _default_config_path()
     with open(path) as f:
         raw = yaml.safe_load(f)
 

@@ -7,36 +7,27 @@ Run with:
     python3 train_tikz.py              # full run (train + GGUF export)
     python3 train_tikz.py --skip-gguf  # train only; run export_gguf.py separately
     python3 train_tikz.py --smoke-test # 100 examples, quick pipeline check
-Config:   tikz_config.yaml  |  Credentials: .env (HF_TOKEN)
+Config:   tikz/config.yaml  |  Credentials: .env (HF_TOKEN)
 """
 import os
 import argparse
-import subprocess
-import sys
 
 from dotenv import load_dotenv
+from common.bootstrap import install_train_dependencies
+from common.gguf import merge_and_save, convert_to_gguf, upload_to_hub
+
 load_dotenv()
 
 os.environ["TQDM_DISABLE"] = "0"
 
 # ── Bootstrap dependencies ───────────────────────────────────────────────────
-def _install():
-    subprocess.run([
-        sys.executable, "-m", "pip", "install", "-q",
-        "torch>=2.8.0", "triton>=3.4.0",
-        "torchvision", "bitsandbytes",
-        "unsloth", "unsloth_zoo>=2026.4.6",
-        "transformers==5.5.0", "torchcodec", "timm",
-    ], check=True)
-
-_install()
+install_train_dependencies()
 
 # ── Imports (after install) ───────────────────────────────────────────────────
 from tikz.config import load_tikz_config
 from tikz.model import load_model_and_tokenizer, attach_lora
 from tikz.data import build_tikz_training_dataset
 from tikz.training import build_trainer, run_training
-from src.gguf import merge_and_save, convert_to_gguf, upload_to_hub  # reuse existing GGUF pipeline
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 parser = argparse.ArgumentParser()
@@ -44,8 +35,8 @@ parser.add_argument("--skip-gguf", action="store_true",
                     help="Skip GGUF export — run export_gguf.py separately")
 parser.add_argument("--smoke-test", action="store_true",
                     help="Use only 100 training examples to verify the pipeline")
-parser.add_argument("--config", default="tikz_config.yaml",
-                    help="Path to TikZ config YAML (default: tikz_config.yaml)")
+parser.add_argument("--config", default="tikz/config.yaml",
+                    help="Path to TikZ config YAML (default: tikz/config.yaml)")
 args = parser.parse_args()
 
 # ── Config ────────────────────────────────────────────────────────────────────

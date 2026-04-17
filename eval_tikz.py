@@ -7,31 +7,19 @@ Run with:
     python3 eval_tikz.py --limit 50               # quick eval on first 50 examples
     python3 eval_tikz.py --compare                # also run base model for comparison
     python3 eval_tikz.py --output-dir ./my_results
-Config:   tikz_config.yaml  |  Adapter: gemma4-4b-tikz-lora/
+Config:   tikz/config.yaml  |  Adapter: gemma4-4b-tikz-lora/
 """
 import argparse
 import os
-import subprocess
 import sys
 
 from dotenv import load_dotenv
+from common.bootstrap import install_tikz_eval_dependencies
+
 load_dotenv()
 
 # ── Bootstrap ────────────────────────────────────────────────────────────────
-def _install():
-    subprocess.run([
-        sys.executable, "-m", "pip", "install", "-q",
-        "torch>=2.8.0", "unsloth", "unsloth_zoo>=2026.4.6",
-        "transformers==5.5.0", "datasets",
-        "pdf2image", "pillow",
-    ], check=True)
-    # Optional visual metrics
-    subprocess.run([
-        sys.executable, "-m", "pip", "install", "-q",
-        "lpips", "scikit-image",
-    ], check=False)  # Don't fail if these aren't available
-
-_install()
+install_tikz_eval_dependencies()
 
 # ── Imports ───────────────────────────────────────────────────────────────────
 from tikz.config import load_tikz_config
@@ -48,8 +36,8 @@ parser.add_argument("--output-dir", default="./tikz_results",
                     help="Directory to save results (default: ./tikz_results)")
 parser.add_argument("--lora-dir", default=None,
                     help="Override LoRA adapter path (default: cfg.output_dir)")
-parser.add_argument("--config", default="tikz_config.yaml",
-                    help="Path to TikZ config YAML (default: tikz_config.yaml)")
+parser.add_argument("--config", default="tikz/config.yaml",
+                    help="Path to TikZ config YAML (default: tikz/config.yaml)")
 args = parser.parse_args()
 
 # ── Config + Model ────────────────────────────────────────────────────────────

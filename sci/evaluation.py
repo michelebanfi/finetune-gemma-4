@@ -9,7 +9,7 @@ from datetime import datetime
 from transformers import TextStreamer
 from unsloth.chat_templates import get_chat_template
 
-from src.config import Config
+from sci.config import Config
 
 
 _QUESTIONS = [

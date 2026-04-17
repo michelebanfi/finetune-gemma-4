@@ -1,7 +1,7 @@
 """
 Task-specific prompt builders for ScholarQABench.
 """
-from src.benchmark_config import BenchmarkTask
+from sci.benchmark_config import BenchmarkTask
 
 
 def build_prompt(item: dict, task: BenchmarkTask) -> str:

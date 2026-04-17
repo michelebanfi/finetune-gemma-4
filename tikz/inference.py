@@ -384,7 +384,7 @@ def main():
                         help="Save final TikZ code to this file")
 
     # Transformers-specific
-    parser.add_argument("--config", default="tikz_config.yaml",
+    parser.add_argument("--config", default="tikz/config.yaml",
                         help="TikZ config YAML (for transformers backend)")
     parser.add_argument("--adapter", type=str,
                         help="LoRA adapter path (overrides config output_dir)")

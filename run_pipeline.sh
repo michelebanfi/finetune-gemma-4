@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Full pipeline: fine-tune → merge → GGUF conversion → HuggingFace upload
+# Scientific pipeline: fine-tune → merge → GGUF conversion → HuggingFace upload
 #
 # Usage:
 #   ./run_pipeline.sh             # full run (train + merge + GGUF + upload)

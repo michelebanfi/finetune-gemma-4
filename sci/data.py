@@ -4,7 +4,7 @@ Dataset loading, normalization, and formatting for Gemma-4 chat template.
 from datasets import load_dataset, concatenate_datasets
 from unsloth.chat_templates import standardize_data_formats
 
-from src.config import Config
+from sci.config import Config
 
 
 def _get_conv_col(dataset) -> str:
