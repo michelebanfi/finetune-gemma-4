@@ -4,6 +4,9 @@
 gemma4-*-sci-lora/
 gemma4-*-sci-gguf/
 
+gemma4-4b-tikz-lora/
+gemma4-4b-tikz-gguf/
+
 llama.cpp/
 model.gguf
 
