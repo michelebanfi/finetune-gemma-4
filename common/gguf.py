@@ -52,9 +52,6 @@ def convert_to_gguf(cfg, script_dir: str) -> str:
 
 
 def upload_to_hub(gguf_file: str, cfg, readme_path: str | None = None):
-    import shutil
-    import tempfile
-
     if not cfg.hf_token or not cfg.hf_repo_gguf:
         print("\n[GGUF 3/3] Skipping upload (HF_TOKEN or hf_repo_gguf not set).")
         return
@@ -66,18 +63,19 @@ def upload_to_hub(gguf_file: str, cfg, readme_path: str | None = None):
 
     size_gb = round(os.path.getsize(gguf_file) / 1e9, 2)
     print(f"\n[GGUF 3/3] Uploading model.gguf ({size_gb} GB) to https://huggingface.co/{cfg.hf_repo_gguf} ...")
-    with tempfile.TemporaryDirectory() as tmp:
-        shutil.copy2(gguf_file, os.path.join(tmp, "model.gguf"))
-        allow = ["model.gguf"]
-        if readme_path and os.path.isfile(readme_path):
-            shutil.copy2(readme_path, os.path.join(tmp, "README.md"))
-            allow.append("README.md")
-            print(f"  Including model card: {readme_path}")
-        api.upload_large_folder(
-            folder_path=tmp,
+    api.upload_file(
+        path_or_fileobj=gguf_file,
+        path_in_repo="model.gguf",
+        repo_id=cfg.hf_repo_gguf,
+        repo_type="model",
+    )
+    if readme_path and os.path.isfile(readme_path):
+        print(f"  Uploading model card: {readme_path}")
+        api.upload_file(
+            path_or_fileobj=readme_path,
+            path_in_repo="README.md",
             repo_id=cfg.hf_repo_gguf,
             repo_type="model",
-            allow_patterns=allow,
         )
     print(f"  Upload complete: https://huggingface.co/{cfg.hf_repo_gguf}")
     print(f"  Run with Ollama: ollama run hf.co/{cfg.hf_repo_gguf}")
